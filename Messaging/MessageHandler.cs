@@ -1,7 +1,5 @@
 ﻿using MongoDB.Driver;
-using System;
 using System.Collections.Generic;
-using System.Dynamic;
 using System.Linq;
 using System.Text;
 using VkNet.Enums.SafetyEnums;
@@ -13,6 +11,8 @@ namespace StoryBot.Messaging
 {
     public class MessageHandler
     {
+        // REFACTOR TO NO ref
+
         public IMongoDatabase database;
 
         public MessageHandler(IMongoDatabase _database)
@@ -20,72 +20,72 @@ namespace StoryBot.Messaging
             database = _database;
         }
 
+        /// <summary>
+        /// Sends a quest choosing dialog
+        /// </summary>
+        /// <param name="response"></param>
         public void SendMenu(ref MessagesSendParams response)
         {
-            var stories = database.GetCollection<StoryDocument>("stories");
-            var results = stories.Find(Builders<StoryDocument>.Filter.Empty).ToList();
+            // Get all stories
+            var results = database.GetCollection<StoryDocument>("stories").Find(Builders<StoryDocument>.Filter.Empty).ToList();
 
+            // Generate keyboard
             KeyboardBuilder keyboard = new KeyboardBuilder();
             keyboard.SetOneTime();
-
             foreach (StoryDocument x in results)
             {
                 keyboard.AddButton(x.name, x.tag, KeyboardButtonColor.Primary);
             }
 
+            // Generate response
             response.Message = "Выберите квест";
             response.Keyboard = keyboard.Build();
         }
 
-        public void HandleKeyboard(ref MessagesSendParams response, string _payload, long? author_id)
+        /// <summary>
+        /// Handles message with keyboard payload
+        /// </summary>
+        /// <param name="response"></param>
+        /// <param name="_payload"></param>
+        /// <param name="author_id"></param>
+        public void HandleKeyboard(ref MessagesSendParams response, string _payload)
         {
+            // Deserialize payload and find story in DB
             StoryProgress payload = StoryProgressConvert.Deserialize(_payload);
             StoryDocument story = database.GetCollection<StoryDocument>("stories").Find(Builders<StoryDocument>.Filter.Eq("tag", payload.story)).ToList()[0];
 
-            //try
-            //{
-            //    var filter = Builders<SaveDocument>.Filter.Eq("id", author_id);
-            //    var save = collection.Find(filter).ToList()[0];
-            //}
-            //catch (System.ArgumentOutOfRangeException)
-            //{
-            //    collection.InsertOne(new SaveDocument
-            //    {
-            //        id = author_id,
-            //        current = new StoryProgress
-            //        {
-            //            story = payload.story,
-            //            storyline = 
-            //        }
-            //    });
-            //}
-
-            string _storyline;
-            if (!string.IsNullOrEmpty(payload.storyline))
+            // If no storyline provided set storyline to beginning and position to 0
+            if (string.IsNullOrEmpty(payload.storyline))
             {
-                _storyline = payload.storyline;
+                payload.storyline = story.beginning;
+                payload.position = 0;
             }
-            else
+            // Check if provided storyline is an ending
+            else if (payload.storyline == "Endings")
             {
-                _storyline = story.beginning;
+                //dynamic ending = ((dynamic)((IDictionary<string, object>)story.story)[payload.storyline])[payload.position];
+                return;
             }
 
-            //FIX
-            dynamic storylineElement = ((dynamic)((IDictionary<string, object>)story.story)[_storyline])[payload.position];
-            //dynamic storylineElement = storyline[payload.position];
+            // Get storyline element
+            dynamic storylineElement = ((dynamic)((IDictionary<string, object>)story.story)[payload.storyline])[payload.position];
 
+            // Generate response message
             StringBuilder str = new StringBuilder(); 
             foreach (string x in storylineElement.content)
             {
                 str.Append(x);
             }
+            response.Message = str.ToString();
 
+            // Generate response keyboard
             KeyboardBuilder keyboard = new KeyboardBuilder();
+            keyboard.SetOneTime();
             foreach (var x in storylineElement.options)
             {
                 string next;
-                int position;
-                bool isANumber = int.TryParse(x.next, out position);
+                bool isANumber = int.TryParse(x.next, out int position);
+                // If provided NEXT isn't a number split it to Storyline and Position
                 if (!isANumber)
                 {
                     string[] splitted = x.next.Split('.');
@@ -96,19 +96,18 @@ namespace StoryBot.Messaging
                         position = int.Parse(splitted[1])
                     });
                 }
+                // Else set Storyline to current
                 else
                 {
                     next = StoryProgressConvert.Serialize(new StoryProgress
                     {
                         story = payload.story,
-                        storyline = _storyline,
+                        storyline = payload.storyline,
                         position = position
                     });
                 }
                 keyboard.AddButton(x.content, next, KeyboardButtonColor.Default);
-            }
-
-            response.Message = str.ToString();
+            }           
             response.Keyboard = keyboard.Build();
         }
     }  

@@ -6,3 +6,4 @@
 /obj
 /Tests
 /StoryBot.csproj.user
+/appsettings.Development.json

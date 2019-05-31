@@ -46,7 +46,7 @@ namespace StoryBot.Callback
             }
             else if (content.Payload != null)
             {
-                messageHandler.HandleKeyboard(ref response, JsonConvert.DeserializeObject<Payload>(content.Payload).Button, content.UserId);
+                messageHandler.HandleKeyboard(ref response, JsonConvert.DeserializeObject<Payload>(content.Payload).Button);
             }
             else
             {
