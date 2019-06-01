@@ -83,7 +83,7 @@ namespace StoryBot.Messaging
             }
             else if (payload.Storyline == "Ending")
             {
-                SendEnding(peerId, story.Endings[payload.Position], story.Endings.Length - 1);
+                SendEnding(peerId, (Ending)story.Endings[payload.Position], story.Endings.Length - 1);
                 return;
             }
 

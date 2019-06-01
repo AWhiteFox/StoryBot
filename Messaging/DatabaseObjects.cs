@@ -18,7 +18,7 @@ namespace StoryBot.Messaging
             [BsonElement("beginning")]
             public string Beginning { get; set; }
             [BsonElement("endings")]
-            public Ending[] Endings { get; set; }
+            public object[] Endings { get; set; }
         }
 
         public class StorylineElement
