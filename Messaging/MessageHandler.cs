@@ -1,6 +1,7 @@
 ﻿using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Text;
 using VkNet.Abstractions;
@@ -87,7 +88,7 @@ namespace StoryBot.Messaging
                 return;
             }
 
-            StorylineElement storylineElement = ((dynamic)((IDictionary<string, object>)story.Story)[payload.Storyline])[payload.Position];
+            dynamic storylineElement = ((List<dynamic>)((IDictionary<string, object>)story.Story)[payload.Storyline])[payload.Position];
 
             StringBuilder stringBuilder = new StringBuilder();
             foreach (string x in storylineElement.Content)
