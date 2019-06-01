@@ -1,7 +1,9 @@
 ﻿using MongoDB.Driver;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using VkNet.Abstractions;
 using VkNet.Enums.SafetyEnums;
 using VkNet.Model.Keyboard;
 using VkNet.Model.RequestParams;
@@ -11,104 +13,137 @@ namespace StoryBot.Messaging
 {
     public class MessageHandler
     {
-        // REFACTOR TO NO ref
+        #region Private members and constructor
 
-        public IMongoDatabase database;
+        private readonly IVkApi vkApi;
 
-        public MessageHandler(IMongoDatabase _database)
+        private readonly IMongoDatabase database;
+
+        public MessageHandler(IVkApi _api, IMongoDatabase _database)
         {
+            vkApi = _api;
             database = _database;
+        }
+
+        #endregion
+
+        #region Methods
+
+        /// <summary>
+        /// Sends "Hello, world!"
+        /// </summary>
+        /// <param name="peerId"></param>
+        public void SendHelloWorld(long peerId)
+        {
+            vkApi.Messages.Send(new MessagesSendParams
+            {
+                RandomId = new DateTime().Millisecond,
+                PeerId = peerId,
+                Message = "Hello, world!"
+            });
         }
 
         /// <summary>
         /// Sends a quest choosing dialog
         /// </summary>
-        /// <param name="response"></param>
-        public void SendMenu(ref MessagesSendParams response)
+        /// <param name="peerId"></param>
+        public void SendMenu(long peerId)
         {
-            // Get all stories
             var results = database.GetCollection<StoryDocument>("stories").Find(Builders<StoryDocument>.Filter.Empty).ToList();
 
-            // Generate keyboard
-            KeyboardBuilder keyboard = new KeyboardBuilder();
-            keyboard.SetOneTime();
+            KeyboardBuilder keyboardBuilder = new KeyboardBuilder(true);
             foreach (StoryDocument x in results)
             {
-                keyboard.AddButton(x.name, x.tag, KeyboardButtonColor.Primary);
+                keyboardBuilder.AddButton(x.Name, x.Tag, KeyboardButtonColor.Primary);
             }
 
-            // Generate response
-            response.Message = "Выберите квест";
-            response.Keyboard = keyboard.Build();
+            vkApi.Messages.Send(new MessagesSendParams
+            {
+                RandomId = new DateTime().Millisecond,
+                PeerId = peerId,
+                Message = "Выберите историю:",
+                Keyboard = keyboardBuilder.Build()
+            });
         }
 
         /// <summary>
         /// Handles message with keyboard payload
         /// </summary>
-        /// <param name="response"></param>
+        /// <param name="peerId"></param>
         /// <param name="_payload"></param>
-        /// <param name="author_id"></param>
-        public void HandleKeyboard(ref MessagesSendParams response, string _payload)
+        public void HandleKeyboard(long peerId, string _payload)
         {
-            // Deserialize payload and find story in DB
             StoryProgress payload = StoryProgressConvert.Deserialize(_payload);
-            StoryDocument story = database.GetCollection<StoryDocument>("stories").Find(Builders<StoryDocument>.Filter.Eq("tag", payload.story)).ToList()[0];
+            StoryDocument story = database.GetCollection<StoryDocument>("stories").Find(Builders<StoryDocument>.Filter.Eq("tag", payload.Story)).ToList()[0];
 
-            // If no storyline provided set storyline to beginning and position to 0
-            if (string.IsNullOrEmpty(payload.storyline))
+            if (string.IsNullOrEmpty(payload.Storyline))
             {
-                payload.storyline = story.beginning;
-                payload.position = 0;
+                payload.Storyline = story.Beginning;
+                payload.Position = 0;
             }
-            // Check if provided storyline is an ending
-            else if (payload.storyline == "Endings")
+            else if (payload.Storyline == "Ending")
             {
-                //dynamic ending = ((dynamic)((IDictionary<string, object>)story.story)[payload.storyline])[payload.position];
+                SendEnding(peerId, story.Endings[payload.Position], story.Endings.Length - 1);
                 return;
             }
 
-            // Get storyline element
-            dynamic storylineElement = ((dynamic)((IDictionary<string, object>)story.story)[payload.storyline])[payload.position];
+            StorylineElement storylineElement = ((dynamic)((IDictionary<string, object>)story.Story)[payload.Storyline])[payload.Position];
 
-            // Generate response message
-            StringBuilder str = new StringBuilder(); 
-            foreach (string x in storylineElement.content)
+            StringBuilder stringBuilder = new StringBuilder();
+            foreach (string x in storylineElement.Content)
             {
-                str.Append(x);
+                stringBuilder.Append(x + "\n");
             }
-            response.Message = str.ToString();
 
-            // Generate response keyboard
-            KeyboardBuilder keyboard = new KeyboardBuilder();
-            keyboard.SetOneTime();
-            foreach (var x in storylineElement.options)
+            KeyboardBuilder keyboardBuilder = new KeyboardBuilder(true);
+            foreach (StoryOption x in storylineElement.Options)
             {
-                string next;
-                bool isANumber = int.TryParse(x.next, out int position);
-                // If provided NEXT isn't a number split it to Storyline and Position
-                if (!isANumber)
+                string next = StoryProgressConvert.Serialize(new StoryProgress
                 {
-                    string[] splitted = x.next.Split('.');
-                    next = StoryProgressConvert.Serialize(new StoryProgress
-                    {
-                        story = payload.story,
-                        storyline = splitted[0],
-                        position = int.Parse(splitted[1])
-                    });
-                }
-                // Else set Storyline to current
-                else
-                {
-                    next = StoryProgressConvert.Serialize(new StoryProgress
-                    {
-                        story = payload.story,
-                        storyline = payload.storyline,
-                        position = position
-                    });
-                }
-                keyboard.AddButton(x.content, next, KeyboardButtonColor.Default);
-            }           
-            response.Keyboard = keyboard.Build();
+                    Story = payload.Story,
+                    Storyline = x.Next ?? payload.Storyline,
+                    Position = x.NextPosition
+                });
+                keyboardBuilder.AddButton(x.Content, next, KeyboardButtonColor.Default);
+            }
+
+            vkApi.Messages.Send(new MessagesSendParams
+            {
+                RandomId = new DateTime().Millisecond,
+                PeerId = peerId,
+                Message = stringBuilder.ToString(),
+                Keyboard = keyboardBuilder.Build()
+            });
         }
-    }  
+
+        private void SendEnding(long peerId, Ending ending, int alternativeEndingsCount)
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            foreach (string x in ending.Content)
+            {
+                stringBuilder.Append(x + "\n");
+            }
+
+            if (ending.Type == 0)
+            {
+                stringBuilder.Append($"Поздравляем, вы получили каноничную концовку \"{ending.Name}\"!\n");
+                stringBuilder.Append($"Эта история содержит еще {alternativeEndingsCount} альтернативные концовки.");
+            }
+            else
+            {
+                stringBuilder.Append($"Поздравляем, вы получили альтернативную концовку \"{ending.Name}\"!\n");
+                stringBuilder.Append($"Эта история содержит еще {alternativeEndingsCount - 1} альтернативные концовки и одну каноничную.");
+            }
+
+            vkApi.Messages.Send(new MessagesSendParams
+            {
+                RandomId = new DateTime().Millisecond,
+                PeerId = peerId,
+                Message = stringBuilder.ToString(),
+            });
+            SendMenu(peerId);
+        }
+
+        #endregion
+    }
 }

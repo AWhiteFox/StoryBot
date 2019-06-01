@@ -15,9 +15,9 @@ namespace StoryBot.Messaging
 
             StoryProgress progress = new StoryProgress
             {
-                story = splitted[0],
-                storyline = splitted[1],
-                position = !string.IsNullOrEmpty(splitted[2]) ? int.Parse(splitted[2]) : 0
+                Story = splitted[0],
+                Storyline = splitted[1],
+                Position = !string.IsNullOrEmpty(splitted[2]) ? int.Parse(splitted[2]) : 0
             };
             return progress;
         }
@@ -25,21 +25,21 @@ namespace StoryBot.Messaging
         public static string Serialize(StoryProgress progress)
         {
             StringBuilder sb;
-            if (string.IsNullOrEmpty(progress.story))
+            if (string.IsNullOrEmpty(progress.Story))
             {
                 return string.Empty;
             }
             else
             {
                 sb = new StringBuilder();
-                sb.Append(progress.story);
+                sb.Append(progress.Story);
             }
-            if (!string.IsNullOrEmpty(progress.storyline))
+            if (!string.IsNullOrEmpty(progress.Storyline))
             {
                 sb.Append('.');
-                sb.Append(progress.storyline);
+                sb.Append(progress.Storyline);
                 sb.Append('.');
-                sb.Append(progress.position.ToString());
+                sb.Append(progress.Position.ToString());
             }
             return sb.ToString();
         }
