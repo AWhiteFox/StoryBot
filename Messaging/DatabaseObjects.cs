@@ -14,11 +14,19 @@ namespace StoryBot.Messaging
             [BsonElement("name")]
             public string Name { get; set; }
             [BsonElement("story")]
-            public object Story { get; set; }
+            public Storyline[] Story { get; set; }
             [BsonElement("beginning")]
             public string Beginning { get; set; }
             [BsonElement("endings")]
-            public object[] Endings { get; set; }
+            public Ending[] Endings { get; set; }
+        }
+
+        public class Storyline
+        {
+            [BsonElement("tag")]
+            public string Tag { get; set; }
+            [BsonElement("storyline_elemnents")]
+            public StorylineElement[] Elements { get; set; }
         }
 
         public class StorylineElement
@@ -39,17 +47,17 @@ namespace StoryBot.Messaging
             public int NextPosition { get; set; }
         }
 
-        public class SaveDocument
-        {
-            [BsonElement("_id")]
-            public ObjectId MongoId { get; set; }
-            [BsonElement("id")]
-            public long? Id { get; set; }
-            [BsonElement("current")]
-            public StoryProgress Current { get; set; }
-            [BsonElement("endings")]
-            public object Endings { get; set; }
-        }
+        //public class SaveDocument
+        //{
+        //    [BsonElement("_id")]
+        //    public ObjectId MongoId { get; set; }
+        //    [BsonElement("id")]
+        //    public long? Id { get; set; }
+        //    [BsonElement("current")]
+        //    public StoryProgress Current { get; set; }
+        //    [BsonElement("endings")]
+        //    public object Endings { get; set; }
+        //}
 
         public class StoryProgress
         {

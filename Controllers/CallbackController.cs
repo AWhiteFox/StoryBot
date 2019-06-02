@@ -12,7 +12,7 @@ namespace StoryBot.Controllers
     [ApiController]
     public class CallbackController : ControllerBase
     {
-        private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
+        private static readonly NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
         private readonly IConfiguration configuration;
 

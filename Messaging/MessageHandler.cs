@@ -1,7 +1,5 @@
 ﻿using MongoDB.Driver;
 using System;
-using System.Collections.Generic;
-using System.Dynamic;
 using System.Linq;
 using System.Text;
 using VkNet.Abstractions;
@@ -75,7 +73,7 @@ namespace StoryBot.Messaging
         public void HandleKeyboard(long peerId, string _payload)
         {
             StoryProgress payload = StoryProgressConvert.Deserialize(_payload);
-            StoryDocument story = database.GetCollection<StoryDocument>("stories").Find(Builders<StoryDocument>.Filter.Eq("tag", payload.Story)).ToList()[0];
+            StoryDocument story = database.GetCollection<StoryDocument>("stories").Find(Builders<StoryDocument>.Filter.Eq("tag", payload.Story)).Single();
 
             if (string.IsNullOrEmpty(payload.Storyline))
             {
@@ -84,20 +82,20 @@ namespace StoryBot.Messaging
             }
             else if (payload.Storyline == "Ending")
             {
-                SendEnding(peerId, (Ending)story.Endings[payload.Position], story.Endings.Length - 1);
+                SendEnding(peerId, story.Endings[payload.Position], story.Endings.Length - 1);
                 return;
             }
 
-            dynamic storylineElement = ((List<dynamic>)((IDictionary<string, object>)story.Story)[payload.Storyline])[payload.Position];
+            StorylineElement storylineElement = Array.Find(story.Story, x => x.Tag == payload.Storyline).Elements[payload.Position];
 
             StringBuilder stringBuilder = new StringBuilder();
-            foreach (string x in storylineElement.content)
+            foreach (string x in storylineElement.Content)
             {
                 stringBuilder.Append(x + "\n");
             }
 
             KeyboardBuilder keyboardBuilder = new KeyboardBuilder(true);
-            foreach (StoryOption x in storylineElement.options)
+            foreach (StoryOption x in storylineElement.Options)
             {
                 string next = StoryProgressConvert.Serialize(new StoryProgress
                 {
