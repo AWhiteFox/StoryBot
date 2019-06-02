@@ -41,6 +41,7 @@ namespace StoryBot
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
                 .UseStartup<Startup>()
+                .UseSetting("https_port", "5001")
                 .ConfigureLogging(logging =>
                 {
                     logging.ClearProviders();
