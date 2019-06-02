@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using MongoDB.Driver;
 using StoryBot.Callback;
 using StoryBot.Messaging;
+using System;
 using VkNet.Abstractions;
 
 namespace StoryBot.Controllers
@@ -11,6 +12,8 @@ namespace StoryBot.Controllers
     [ApiController]
     public class CallbackController : ControllerBase
     {
+        private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
+
         private readonly IConfiguration configuration;
 
         private readonly CallbackHandler callbackHandler;
@@ -26,15 +29,23 @@ namespace StoryBot.Controllers
         [HttpPost]
         public IActionResult Post([FromBody] Update update)
         {
-            switch (update.Type)
+            try
             {
-                case "confirmation":
-                    return Ok(configuration["Config:Confirmation"]);
-                case "message_new":
-                    callbackHandler.NewMessage(update.Object);
-                    break;
+                switch (update.Type)
+                {
+                    case "confirmation":
+                        return Ok(configuration["Config:Confirmation"]);
+                    case "message_new":
+                        callbackHandler.NewMessage(update.Object);
+                        break;
+                }
+                return Ok("ok");
             }
-            return Ok("ok");
+            catch (Exception exception)
+            {
+                logger.Error(exception, "An error occured while handling request");
+                return BadRequest();
+            }            
         }
     }
 }
