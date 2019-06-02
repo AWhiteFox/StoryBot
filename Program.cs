@@ -20,7 +20,7 @@ namespace StoryBot
 
             Target.Register<Logging.NLogTargetDiscord>("Discord");
 
-            var logger = NLogBuilder.ConfigureNLog("nlog.config").GetCurrentClassLogger();
+            NLog.Logger logger = NLogBuilder.ConfigureNLog("nlog.config").GetCurrentClassLogger();
 
             try
             {

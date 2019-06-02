@@ -22,7 +22,14 @@ namespace StoryBot.Logging
 
         protected override void Write(LogEventInfo logEvent)
         {
-            string logMessage = this.Layout.Render(logEvent);
+            if (logEvent.Exception != null)
+            {
+                logEvent.Message += System.Environment.NewLine +
+                    "```csharp" + System.Environment.NewLine + 
+                    logEvent.Exception.ToString() + System.Environment.NewLine + 
+                    "```";
+            }
+            string logMessage = Layout.Render(logEvent);
             discord.Send(logMessage);
         }
     }
