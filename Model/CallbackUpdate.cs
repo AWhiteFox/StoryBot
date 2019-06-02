@@ -2,10 +2,10 @@
 using Newtonsoft.Json.Linq;
 using System;
 
-namespace StoryBot.Callback
+namespace StoryBot.Model
 {
     [Serializable]
-    public class Update
+    public class CallbackUpdate
     {
         [JsonProperty("type")]
         public string Type { get; set; }

@@ -1,6 +1,6 @@
-﻿using System;
+﻿using StoryBot.Model;
+using System;
 using System.Text;
-using static StoryBot.Messaging.DatabaseObjects;
 
 namespace StoryBot.Messaging
 {

@@ -1,4 +1,5 @@
 ﻿using MongoDB.Driver;
+using StoryBot.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,7 +9,7 @@ using VkNet.Enums.SafetyEnums;
 using VkNet.Model.Keyboard;
 using VkNet.Model.RequestParams;
 using VkNet.Utils;
-using static StoryBot.Messaging.DatabaseObjects;
+using static StoryBot.Messaging.StoryProgressConvert;
 
 namespace StoryBot.Messaging
 {
@@ -117,7 +118,7 @@ namespace StoryBot.Messaging
             });
         }
 
-        private void SendEnding(long peerId, Ending ending, int alternativeEndingsCount)
+        private void SendEnding(long peerId, StoryEnding ending, int alternativeEndingsCount)
         {
             StringBuilder stringBuilder = new StringBuilder();
             foreach (string x in ending.Content)
