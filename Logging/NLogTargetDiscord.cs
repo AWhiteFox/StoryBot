@@ -34,7 +34,7 @@ namespace StoryBot.Logging
                 {
                     if (stringBuilder.Length + x.Length < 2000)
                     {
-                        stringBuilder.Append(x);
+                        stringBuilder.Append(x + "\n");
                     }
                     else
                     {
@@ -52,7 +52,10 @@ namespace StoryBot.Logging
                     discord.Send($"```csharp\n{x}\n```");
                 }
             }
-            discord.Send(Layout.Render(logEvent));
+            else
+            {
+                discord.Send(Layout.Render(logEvent));
+            }
         }
     }
 }
