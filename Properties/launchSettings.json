@@ -2,10 +2,6 @@
   "iisSettings": {
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
-    "iis": {
-      "applicationUrl": "http://localhost/StoryBot",
-      "sslPort": 0
-    },
     "iisExpress": {
       "applicationUrl": "http://localhost:52442",
       "sslPort": 44386

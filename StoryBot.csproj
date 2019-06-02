@@ -6,10 +6,6 @@
     <StartupObject>StoryBot.Program</StartupObject>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DefineConstants>TRACE</DefineConstants>
-  </PropertyGroup>
-
   <ItemGroup>
     <Compile Remove="obj\**" />
     <Content Remove="obj\**" />
