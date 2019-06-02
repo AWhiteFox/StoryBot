@@ -25,7 +25,7 @@ namespace StoryBot.Messaging
         {
             [BsonElement("tag")]
             public string Tag { get; set; }
-            [BsonElement("storyline_elemnents")]
+            [BsonElement("elements")]
             public StorylineElement[] Elements { get; set; }
         }
 
@@ -73,7 +73,7 @@ namespace StoryBot.Messaging
         {
             [BsonElement("type")]
             public int Type { get; set; }
-            [BsonElement("Name")]
+            [BsonElement("name")]
             public string Name { get; set; }
             [BsonElement("content")]
             public string[] Content { get; set; }
