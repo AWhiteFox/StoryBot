@@ -91,13 +91,13 @@ namespace StoryBot.Messaging
             dynamic storylineElement = ((List<dynamic>)((IDictionary<string, object>)story.Story)[payload.Storyline])[payload.Position];
 
             StringBuilder stringBuilder = new StringBuilder();
-            foreach (string x in storylineElement.Content)
+            foreach (string x in storylineElement.content)
             {
                 stringBuilder.Append(x + "\n");
             }
 
             KeyboardBuilder keyboardBuilder = new KeyboardBuilder(true);
-            foreach (StoryOption x in storylineElement.Options)
+            foreach (StoryOption x in storylineElement.options)
             {
                 string next = StoryProgressConvert.Serialize(new StoryProgress
                 {

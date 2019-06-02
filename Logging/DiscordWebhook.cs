@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.IO;
 using System.Net;
 
@@ -19,12 +20,12 @@ namespace StoryBot.Logging
             httpWebRequest.ContentType = "application/json";
             httpWebRequest.Method = "POST";
 
-            content = content.Replace("\"", @"\""");
-
             using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
             {
-                string json = $"{{\"content\": \"{content}\"}}";
-                streamWriter.Write(json);
+                streamWriter.Write(JsonConvert.SerializeObject(new Json
+                {
+                    Content = content
+                }));
             }
 
             HttpWebResponse httpResponse;
@@ -33,7 +34,7 @@ namespace StoryBot.Logging
             {
                 httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
             }
-            catch (Exception)
+            catch
             {
                 return;
             }
@@ -42,6 +43,13 @@ namespace StoryBot.Logging
             {
                 streamReader.ReadToEnd();
             }
+        }
+
+        [Serializable]
+        private class Json
+        {
+            [JsonProperty("content")]
+            public string Content { get; set; }
         }
     }
 }
