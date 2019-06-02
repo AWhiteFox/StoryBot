@@ -1,5 +1,6 @@
 ﻿using MongoDB.Driver;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using VkNet.Abstractions;
@@ -48,7 +49,7 @@ namespace StoryBot.Messaging
         /// <param name="peerId"></param>
         public void SendMenu(long peerId)
         {
-            var results = database.GetCollection<StoryDocument>("stories").Find(Builders<StoryDocument>.Filter.Empty).ToList();
+            List<StoryDocument> results = database.GetCollection<StoryDocument>("stories").Find(Builders<StoryDocument>.Filter.Empty).ToList();
 
             KeyboardBuilder keyboardBuilder = new KeyboardBuilder(true);
             foreach (StoryDocument x in results)
@@ -125,12 +126,12 @@ namespace StoryBot.Messaging
 
             if (ending.Type == 0)
             {
-                stringBuilder.Append($"Поздравляем, вы получили каноничную концовку \"{ending.Name}\"!\n");
+                stringBuilder.Append($"\nПоздравляем, вы получили каноничную концовку \"{ending.Name}\"!\n\n");
                 stringBuilder.Append($"Эта история содержит еще {alternativeEndingsCount} альтернативные концовки.");
             }
             else
             {
-                stringBuilder.Append($"Поздравляем, вы получили альтернативную концовку \"{ending.Name}\"!\n");
+                stringBuilder.Append($"\nПоздравляем, вы получили альтернативную концовку \"{ending.Name}\"!\n\n");
                 stringBuilder.Append($"Эта история содержит еще {alternativeEndingsCount - 1} альтернативные концовки и одну каноничную.");
             }
 

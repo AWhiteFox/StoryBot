@@ -1,5 +1,7 @@
 ﻿using NLog;
 using NLog.Targets;
+using System.Collections.Generic;
+using System.Text;
 
 namespace StoryBot.Logging
 {
@@ -24,13 +26,33 @@ namespace StoryBot.Logging
         {
             if (logEvent.Exception != null)
             {
-                logEvent.Message += System.Environment.NewLine +
-                    "```csharp" + System.Environment.NewLine + 
-                    logEvent.Exception.ToString() + System.Environment.NewLine + 
-                    "```";
+                string[] splitted = logEvent.Exception.ToString().Split(System.Environment.NewLine);
+
+                StringBuilder stringBuilder = new StringBuilder();
+                List<string> sendingList = new List<string>();
+                foreach (string x in splitted)
+                {
+                    if (stringBuilder.Length + x.Length < 2000)
+                    {
+                        stringBuilder.Append(x);
+                    }
+                    else
+                    {
+                        sendingList.Add(stringBuilder.ToString());
+                        stringBuilder.Clear();
+                    }
+                }
+                sendingList.Add(stringBuilder.ToString());
+
+                logEvent.Exception = null;
+                discord.Send(Layout.Render(logEvent));
+
+                foreach (string x in sendingList)
+                {
+                    discord.Send($"```csharp\n{x}\n```");
+                }
             }
-            string logMessage = Layout.Render(logEvent);
-            discord.Send(logMessage);
+            discord.Send(Layout.Render(logEvent));
         }
     }
 }
