@@ -59,7 +59,7 @@ namespace StoryBot.Controllers
             {
                 if (content.Text[0] == '!')
                 {
-                    switch (content.Text.Remove(0).ToLower())
+                    switch (content.Text.Remove(0, 1).ToLower())
                     {
                         case "helloworld":
                             messageHandler.SendHelloWorld(peerId);
