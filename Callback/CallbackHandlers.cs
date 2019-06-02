@@ -23,28 +23,28 @@ namespace StoryBot.Callback
             var content = Message.FromJson(new VkResponse(obj));
             long peerId = content.PeerId.Value;
 
-            if (content.Text[0] == '!')
+            if (messageHandler.GetLastMessageDate(peerId) <= content.Date)
             {
-                switch (content.Text.ToLower())
+                if (content.Text[0] == '!')
                 {
-                    case "!helloworld":
-                        messageHandler.SendHelloWorld(peerId);
-                        return;
-                    case "!reset":
-                        messageHandler.SendMenu(peerId);
-                        return;
-                    default:
-                        return;
+                    switch (content.Text.ToLower())
+                    {
+                        case "!helloworld":
+                            messageHandler.SendHelloWorld(peerId);
+                            return;
+                        case "!reset":
+                            messageHandler.SendMenu(peerId);
+                            return;
+                        default:
+                            return;
+                    }
                 }
-            }
-            else if (content.Payload != null)
-            {
-                messageHandler.HandleKeyboard(peerId, JsonConvert.DeserializeObject<Payload>(content.Payload).Button);
-            }
-            else
-            {
-                return;
-            }
+                else if (content.Payload != null)
+                {
+                    messageHandler.HandleKeyboard(peerId, JsonConvert.DeserializeObject<Payload>(content.Payload).Button);
+                }
+            }           
+            return;
         }
 
         [Serializable]

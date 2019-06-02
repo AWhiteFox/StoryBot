@@ -7,6 +7,7 @@ using VkNet.Abstractions;
 using VkNet.Enums.SafetyEnums;
 using VkNet.Model.Keyboard;
 using VkNet.Model.RequestParams;
+using VkNet.Utils;
 using static StoryBot.Messaging.DatabaseObjects;
 
 namespace StoryBot.Messaging
@@ -142,6 +143,11 @@ namespace StoryBot.Messaging
                 Message = stringBuilder.ToString(),
             });
             SendMenu(peerId);
+        }
+
+        public DateTime? GetLastMessageDate(long peerId)
+        {
+            return vkApi.Messages.GetHistory(new MessagesGetHistoryParams { Count = 1, PeerId = peerId }).Messages.ToCollection()[0].Date;
         }
 
         #endregion
