@@ -110,7 +110,12 @@ namespace StoryBot.Messaging
             }
             catch (IndexOutOfRangeException)
             {
-                return;
+                vkApi.Messages.Send(new MessagesSendParams
+                {
+                    RandomId = new DateTime().Millisecond,
+                    PeerId = peerId,
+                    Message = "Выберите вариант из представленных"
+                });
             }
         }
         
