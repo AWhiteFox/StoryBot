@@ -56,8 +56,16 @@ namespace StoryBot.Messaging
             for (int i = 0; i < stories.Count; i++)
             {
                 var x = stories[i];
-                stringBuilder.Append($"[ {i + 1} ] {x.Name}");
-                keyboardBuilder.AddButton($"[ {i + 1} ]", x.Tag, KeyboardButtonColor.Primary);
+                stringBuilder.Append($"[ {i + 1} ] {x.Name}\n");
+                keyboardBuilder.AddButton(
+                    $"[ {i + 1} ]",
+                    JsonConvert.SerializeObject(new Progress
+                    {
+                        Story = x.Name,
+                        Storyline = x.Beginning,
+                        Position = 0
+                    }),
+                    KeyboardButtonColor.Primary);
             }
 
             vkApi.Messages.Send(new MessagesSendParams
@@ -79,51 +87,47 @@ namespace StoryBot.Messaging
             Progress payload = JsonConvert.DeserializeObject<Progress>(_payload);
             StoryDocument story = storiesHandler.GetStory(payload.Story);
 
-            if (string.IsNullOrEmpty(payload.Storyline))
+            if (payload.Storyline != "Ending")
             {
-                payload.Storyline = story.Beginning;
-                payload.Position = 0;
+                StorylineElement storylineElement = Array.Find(story.Story, x => x.Tag == payload.Storyline).Elements[payload.Position];
+
+                StringBuilder stringBuilder = new StringBuilder();
+                foreach (string x in storylineElement.Content)
+                {
+                    stringBuilder.Append(x + "\n");
+                }
+                stringBuilder.Append("\n");
+
+                KeyboardBuilder keyboardBuilder = new KeyboardBuilder(true);
+                for (int i = 0; i < storylineElement.Options.Length; i++)
+                {
+                    var x = storylineElement.Options[i];
+
+                    stringBuilder.Append($"[ {i + 1} ] {x.Content}\n");
+
+                    keyboardBuilder.AddButton($"[ {i + 1} ]",
+                        JsonConvert.SerializeObject(new Progress
+                        {
+                            Story = payload.Story,
+                            Storyline = x.Next ?? payload.Storyline,
+                            Position = x.NextPosition
+                        }),
+                        KeyboardButtonColor.Default);
+                }
+
+                vkApi.Messages.Send(new MessagesSendParams
+                {
+                    RandomId = new DateTime().Millisecond,
+                    PeerId = peerId,
+                    Message = stringBuilder.ToString(),
+                    Keyboard = keyboardBuilder.Build()
+                });
+                savesHandler.SaveProgress(peerId, payload);
             }
-            else if (payload.Storyline == "Ending")
+            else
             {
                 SendEnding(peerId, story.Endings[payload.Position], story.Endings.Length - 1);
-                return;
-            }
-
-            StorylineElement storylineElement = Array.Find(story.Story, x => x.Tag == payload.Storyline).Elements[payload.Position];
-
-            StringBuilder stringBuilder = new StringBuilder();
-            foreach (string x in storylineElement.Content)
-            {
-                stringBuilder.Append(x + "\n");
-            }
-            stringBuilder.Append("\n");
-
-            KeyboardBuilder keyboardBuilder = new KeyboardBuilder(true);
-            for (int i = 0; i < storylineElement.Options.Length; i++)
-            {
-                var x = storylineElement.Options[i];
-
-                stringBuilder.Append($"[ {i + 1} ] {x.Content}\n");
-
-                keyboardBuilder.AddButton($"[ {i + 1} ]",
-                    JsonConvert.SerializeObject(new Progress
-                    {
-                        Story = payload.Story,
-                        Storyline = x.Next ?? payload.Storyline,
-                        Position = x.NextPosition
-                    }),
-                    KeyboardButtonColor.Default);
-            }
-
-            vkApi.Messages.Send(new MessagesSendParams
-            {
-                RandomId = new DateTime().Millisecond,
-                PeerId = peerId,
-                Message = stringBuilder.ToString(),
-                Keyboard = keyboardBuilder.Build()
-            });
-            savesHandler.SaveProgress(peerId, payload);
+            }       
         }
 
         /// <summary>
