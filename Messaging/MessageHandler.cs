@@ -60,7 +60,7 @@ namespace StoryBot.Messaging
                     $"[ {i + 1} ]",
                     System.Web.HttpUtility.JavaScriptStringEncode(JsonConvert.SerializeObject(new Progress
                     {
-                        Story = x.Name,
+                        Story = x.Tag,
                         Storyline = x.Beginning,
                         Position = 0
                     })),
