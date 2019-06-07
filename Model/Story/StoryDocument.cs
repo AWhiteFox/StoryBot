@@ -5,8 +5,8 @@ namespace StoryBot.Model
 {
     public class StoryDocument
     {
-        [BsonElement("_id")]
-        public ObjectId MongoId { get; set; }
+        [BsonId]
+        public ObjectId ObjectId { get; set; }
 
         [BsonElement("tag")]
         public string Tag { get; set; }

@@ -1,16 +1,22 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
+using Newtonsoft.Json;
+using System;
 
 namespace StoryBot.Model
 {
-    public class StoryProgress
+    [Serializable]
+    public class Progress
     {
-        [BsonElement("storyl")]
+        [JsonProperty("story")]
+        [BsonElement("story")]
         public string Story { get; set; }
 
+        [JsonProperty("storyline")]
         [BsonElement("storyline")]
         public string Storyline { get; set; }
 
-        [BsonElement("position")]
+        [JsonProperty("next_pos")]
+        [BsonElement("next_pos")]
         public int Position { get; set; }
     }
 }

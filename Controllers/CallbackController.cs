@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using MongoDB.Driver;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using StoryBot.Messaging;
@@ -22,10 +21,12 @@ namespace StoryBot.Controllers
 
         private readonly MessageHandler messageHandler;
 
-        public CallbackController(IConfiguration configuration, IVkApi vkApi, IMongoDatabase database)
+        public CallbackController(IConfiguration configuration, IVkApi vkApi, MongoDB.Driver.IMongoDatabase database)
         {
             this.configuration = configuration;
-            messageHandler = new MessageHandler(vkApi, database);
+            messageHandler = new MessageHandler(vkApi,
+                                                new StoriesHandler(database.GetCollection<StoryDocument>("stories")),
+                                                new SavesHandler(database.GetCollection<SaveDocument>("saves")));
         }
 
         [HttpPost]
@@ -66,8 +67,6 @@ namespace StoryBot.Controllers
                             return;
                         case "reset":
                             messageHandler.SendMenu(peerId);
-                            return;
-                        default:
                             return;
                     }
                 }

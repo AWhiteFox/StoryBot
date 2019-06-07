@@ -26,7 +26,7 @@ namespace StoryBot
 
             services.AddSingleton<IVkApi>(sp => 
             {
-                var api = new VkApi();
+                VkApi api = new VkApi();
                 api.Authorize(new ApiAuthParams { AccessToken = Configuration["Config:AccessToken"] });
                 return api;
             });

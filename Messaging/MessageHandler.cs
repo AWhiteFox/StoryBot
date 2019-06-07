@@ -1,35 +1,30 @@
-﻿using MongoDB.Driver;
+﻿using Newtonsoft.Json;
 using StoryBot.Model;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using VkNet.Abstractions;
 using VkNet.Enums.SafetyEnums;
 using VkNet.Model.Keyboard;
 using VkNet.Model.RequestParams;
 using VkNet.Utils;
-using static StoryBot.Messaging.StoryProgressConvert;
 
 namespace StoryBot.Messaging
 {
     public class MessageHandler
     {
-        #region Private members and constructor
-
         private readonly IVkApi vkApi;
 
-        private readonly IMongoDatabase database;
+        private readonly StoriesHandler storiesHandler;
 
-        public MessageHandler(IVkApi _api, IMongoDatabase _database)
+        private readonly SavesHandler savesHandler;
+
+        public MessageHandler(IVkApi _api, StoriesHandler _storiesHandler, SavesHandler _savesHandler)
         {
             vkApi = _api;
-            database = _database;
+            storiesHandler = _storiesHandler;
+            savesHandler = _savesHandler;
         }
-
-        #endregion
-
-        #region Methods
 
         /// <summary>
         /// Sends "Hello, world!"
@@ -51,19 +46,25 @@ namespace StoryBot.Messaging
         /// <param name="peerId"></param>
         public void SendMenu(long peerId)
         {
-            List<StoryDocument> results = database.GetCollection<StoryDocument>("stories").Find(Builders<StoryDocument>.Filter.Empty).ToList();
+            List<StoryDocument> stories = storiesHandler.GetAllStories();
+
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append("Выберите историю:");
+            stringBuilder.Append("---------------------");
 
             KeyboardBuilder keyboardBuilder = new KeyboardBuilder(true);
-            foreach (StoryDocument x in results)
+            for (int i = 0; i < stories.Count; i++)
             {
-                keyboardBuilder.AddButton(x.Name, x.Tag, KeyboardButtonColor.Primary);
+                var x = stories[i];
+                stringBuilder.Append($"[ {i + 1} ] {x.Name}");
+                keyboardBuilder.AddButton($"[ {i + 1} ]", x.Tag, KeyboardButtonColor.Primary);
             }
 
             vkApi.Messages.Send(new MessagesSendParams
             {
                 RandomId = new DateTime().Millisecond,
                 PeerId = peerId,
-                Message = "Выберите историю:",
+                Message = stringBuilder.ToString(),
                 Keyboard = keyboardBuilder.Build()
             });
         }
@@ -75,8 +76,8 @@ namespace StoryBot.Messaging
         /// <param name="_payload"></param>
         public void HandleKeyboard(long peerId, string _payload)
         {
-            StoryProgress payload = StoryProgressConvert.Deserialize(_payload);
-            StoryDocument story = database.GetCollection<StoryDocument>("stories").Find(Builders<StoryDocument>.Filter.Eq("tag", payload.Story)).Single();
+            Progress payload = JsonConvert.DeserializeObject<Progress>(_payload);
+            StoryDocument story = storiesHandler.GetStory(payload.Story);
 
             if (string.IsNullOrEmpty(payload.Storyline))
             {
@@ -96,17 +97,23 @@ namespace StoryBot.Messaging
             {
                 stringBuilder.Append(x + "\n");
             }
+            stringBuilder.Append("\n");
 
             KeyboardBuilder keyboardBuilder = new KeyboardBuilder(true);
-            foreach (StoryOption x in storylineElement.Options)
+            for (int i = 0; i < storylineElement.Options.Length; i++)
             {
-                string next = StoryProgressConvert.Serialize(new StoryProgress
-                {
-                    Story = payload.Story,
-                    Storyline = x.Next ?? payload.Storyline,
-                    Position = x.NextPosition
-                });
-                keyboardBuilder.AddButton(x.Content, next, KeyboardButtonColor.Default);
+                var x = storylineElement.Options[i];
+
+                stringBuilder.Append($"[ {i + 1} ] {x.Content}\n");
+
+                keyboardBuilder.AddButton($"[ {i + 1} ]",
+                    JsonConvert.SerializeObject(new Progress
+                    {
+                        Story = payload.Story,
+                        Storyline = x.Next ?? payload.Storyline,
+                        Position = x.NextPosition
+                    }),
+                    KeyboardButtonColor.Default);
             }
 
             vkApi.Messages.Send(new MessagesSendParams
@@ -116,8 +123,15 @@ namespace StoryBot.Messaging
                 Message = stringBuilder.ToString(),
                 Keyboard = keyboardBuilder.Build()
             });
+            savesHandler.SaveProgress(peerId, payload);
         }
 
+        /// <summary>
+        /// Sends an ending message
+        /// </summary>
+        /// <param name="peerId"></param>
+        /// <param name="ending"></param>
+        /// <param name="alternativeEndingsCount"></param>
         private void SendEnding(long peerId, StoryEnding ending, int alternativeEndingsCount)
         {
             StringBuilder stringBuilder = new StringBuilder();
@@ -141,7 +155,7 @@ namespace StoryBot.Messaging
             {
                 RandomId = new DateTime().Millisecond,
                 PeerId = peerId,
-                Message = stringBuilder.ToString(),
+                Message = stringBuilder.ToString()
             });
             SendMenu(peerId);
         }
@@ -150,7 +164,5 @@ namespace StoryBot.Messaging
         {
             return vkApi.Messages.GetHistory(new MessagesGetHistoryParams { Count = 1, PeerId = peerId }).Messages.ToCollection()[0].Date;
         }
-
-        #endregion
     }
 }
