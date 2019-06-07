@@ -74,6 +74,10 @@ namespace StoryBot.Controllers
                 {
                     messageHandler.HandleKeyboard(peerId, JsonConvert.DeserializeObject<CallbackNewMessagePayload>(content.Payload).Button);
                 }
+                else if (int.TryParse(content.Text, out int number))
+                {
+                    messageHandler.HandleNumber(peerId, number - 1);
+                }
             }
             return;
         }

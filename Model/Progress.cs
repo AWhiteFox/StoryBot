@@ -15,8 +15,8 @@ namespace StoryBot.Model
         [BsonElement("storyline")]
         public string Storyline { get; set; }
 
-        [JsonProperty("next_pos")]
-        [BsonElement("next_pos")]
+        [JsonProperty("position")]
+        [BsonElement("position")]
         public int Position { get; set; }
     }
 }

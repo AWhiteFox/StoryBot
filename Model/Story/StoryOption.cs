@@ -7,10 +7,10 @@ namespace StoryBot.Model
         [BsonElement("content")]
         public string Content { get; set; }
 
-        [BsonElement("next")]
-        public string Next { get; set; }
+        [BsonElement("storyline")]
+        public string Storyline { get; set; }
 
-        [BsonElement("next_pos")]
-        public int NextPosition { get; set; }
+        [BsonElement("position")]
+        public int Position { get; set; }
     }
 }
