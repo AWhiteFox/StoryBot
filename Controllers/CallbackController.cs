@@ -19,12 +19,12 @@ namespace StoryBot.Controllers
 
         private readonly IConfiguration configuration;
 
-        private readonly MessageHandler messageHandler;
+        private readonly MessagesHandler messagesHandler;
 
         public CallbackController(IConfiguration configuration, IVkApi vkApi, MongoDB.Driver.IMongoDatabase database)
         {
             this.configuration = configuration;
-            messageHandler = new MessageHandler(vkApi,
+            messagesHandler = new MessagesHandler(vkApi,
                                                 new StoriesHandler(database.GetCollection<StoryDocument>("stories")),
                                                 new SavesHandler(database.GetCollection<SaveDocument>("saves")));
         }
@@ -56,30 +56,37 @@ namespace StoryBot.Controllers
             var content = Message.FromJson(new VkResponse(obj));
             long peerId = content.PeerId.Value;
 
-            if (messageHandler.GetLastMessageDate(peerId) <= content.Date)
+            try
             {
-                if (content.Text[0] == '!')
+                if (messagesHandler.GetLastMessageDate(peerId) <= content.Date)
                 {
-                    switch (content.Text.Remove(0, 1).ToLower())
+                    if (content.Text[0] == '!')
                     {
-                        case "helloworld":
-                            messageHandler.SendHelloWorld(peerId);
-                            return;
-                        case "reset":
-                            messageHandler.SendMenu(peerId);
-                            return;
+                        switch (content.Text.Remove(0, 1).ToLower())
+                        {
+                            case "helloworld":
+                                messagesHandler.SendHelloWorld(peerId);
+                                return;
+                            case "reset":
+                                messagesHandler.SendMenu(peerId);
+                                return;
+                        }
+                    }
+                    else if (content.Payload != null)
+                    {
+                        messagesHandler.HandleKeyboard(peerId, JsonConvert.DeserializeObject<CallbackNewMessagePayload>(content.Payload).Button);
+                    }
+                    else if (int.TryParse(content.Text, out int number))
+                    {
+                        messagesHandler.HandleNumber(peerId, number - 1);
                     }
                 }
-                else if (content.Payload != null)
-                {
-                    messageHandler.HandleKeyboard(peerId, JsonConvert.DeserializeObject<CallbackNewMessagePayload>(content.Payload).Button);
-                }
-                else if (int.TryParse(content.Text, out int number))
-                {
-                    messageHandler.HandleNumber(peerId, number - 1);
-                }
             }
-            return;
+            catch (Exception exception)
+            {
+                messagesHandler.SendError(peerId, exception.Message);
+                throw;
+            }
         }
     }
 }

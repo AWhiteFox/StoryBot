@@ -11,7 +11,7 @@ using VkNet.Utils;
 
 namespace StoryBot.Messaging
 {
-    public class MessageHandler
+    public class MessagesHandler
     {
         private readonly IVkApi vkApi;
 
@@ -19,7 +19,7 @@ namespace StoryBot.Messaging
 
         private readonly SavesHandler savesHandler;
 
-        public MessageHandler(IVkApi _api, StoriesHandler _storiesHandler, SavesHandler _savesHandler)
+        public MessagesHandler(IVkApi _api, StoriesHandler _storiesHandler, SavesHandler _savesHandler)
         {
             vkApi = _api;
             storiesHandler = _storiesHandler;
@@ -76,6 +76,16 @@ namespace StoryBot.Messaging
             });
         }
 
+        public void SendError(long peerId, string content)
+        {
+            vkApi.Messages.Send(new MessagesSendParams
+            {
+                RandomId = new DateTime().Millisecond,
+                PeerId = peerId,
+                Message = $"Во время обработки вашего сообщения произошла непредвиденная ошибка: {content}\nПожалуйста сообщите администрации"
+            });
+        }
+
         /// <summary>
         /// Handles message if it is a number
         /// </summary>
@@ -83,18 +93,25 @@ namespace StoryBot.Messaging
         /// <param name="number"></param>
         public void HandleNumber(long peerId, int number)
         {
-            Progress progress = savesHandler.GetProgress(peerId);
-            StoryDocument story = storiesHandler.GetStory(progress.Story);
+            try
+            {
+                Progress progress = savesHandler.GetProgress(peerId);
+                StoryDocument story = storiesHandler.GetStory(progress.Story);
 
-            StoryOption storyOption = Array
-                .Find(story.Story, x => x.Tag == progress.Storyline)
-                .Elements[progress.Position]
-                .Options[number];
+                StoryOption storyOption = Array
+                    .Find(story.Story, x => x.Tag == progress.Storyline)
+                    .Elements[progress.Position]
+                    .Options[number];
 
-            progress.Storyline = storyOption.Storyline ?? progress.Storyline;
-            progress.Position = storyOption.Position;
+                progress.Storyline = storyOption.Storyline ?? progress.Storyline;
+                progress.Position = storyOption.Position;
 
-            SendContent(peerId, progress, story);
+                SendContent(peerId, progress, story);
+            }
+            catch (IndexOutOfRangeException)
+            {
+                return;
+            }
         }
         
         /// <summary>
