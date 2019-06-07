@@ -8,6 +8,8 @@ namespace StoryBot.Messaging
 {
     public class SavesHandler
     {
+        private static readonly NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
+
         private readonly IMongoCollection<SaveDocument> collection;
 
         public SavesHandler(IMongoCollection<SaveDocument> _collection)
@@ -18,16 +20,40 @@ namespace StoryBot.Messaging
         public void SaveProgress(long id, Progress progress)
         {
             FilterDefinition<SaveDocument> filter = Builders<SaveDocument>.Filter.Eq("id", id);
+            var results = collection.Find(filter);
 
-            SaveDocument save = collection.Find(filter).Single();
-            save.Current = progress;
+            try
+            {
+                SaveDocument save = results.Single();
+                save.Current = progress;
 
-            collection.ReplaceOne(filter, save);
+                collection.ReplaceOne(filter, save);
+            }
+            catch (InvalidOperationException)
+            {
+                logger.Info($"Save for {id} not found. Creating one...");
+                CreateSave(id);
+                SaveProgress(id, progress);
+            }
         }
 
         public Progress GetProgress(long id)
         {
-            return collection.Find(Builders<SaveDocument>.Filter.Eq("id", id)).Single().Current;
+            var results = collection.Find(Builders<SaveDocument>.Filter.Eq("id", id));
+            try
+            {
+                return results.Single().Current;
+            }
+            catch (InvalidOperationException)
+            {
+                if (results.CountDocuments() == 0)
+                {
+                    logger.Info($"Save for {id} not found. Creating one...");
+                    CreateSave(id);
+                    return GetProgress(id);
+                }
+                else throw;
+            }
         }
 
         public void SaveObtainedEnding(long id, string questTag, int ending)
@@ -44,6 +70,16 @@ namespace StoryBot.Messaging
             save.Endings[questIndex].ObtainedEndings = list.ToArray();
 
             collection.ReplaceOne(filter, save);
+        }
+
+        private void CreateSave(long id)
+        {
+            collection.InsertOne(new SaveDocument
+            {
+                Id = id,
+                Current = null,
+                Endings = null
+            });
         }
     }
 }

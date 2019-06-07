@@ -167,7 +167,15 @@ namespace StoryBot.Messaging
 
         public DateTime? GetLastMessageDate(long peerId)
         {
-            return vkApi.Messages.GetHistory(new MessagesGetHistoryParams { Count = 1, PeerId = peerId }).Messages.ToCollection()[0].Date;
+            try
+            {
+                return vkApi.Messages.GetHistory(new MessagesGetHistoryParams { Count = 1, PeerId = peerId }).Messages.ToCollection()[0].Date;
+            }
+            catch (VkNet.Exception.ParameterMissingOrInvalidException)
+            {
+                var x = DateTime.MinValue;
+                return DateTime.MinValue;
+            }
         }
     }
 }
