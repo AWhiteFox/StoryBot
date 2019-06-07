@@ -49,8 +49,7 @@ namespace StoryBot.Messaging
             List<StoryDocument> stories = storiesHandler.GetAllStories();
 
             StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.Append("Выберите историю:");
-            stringBuilder.Append("---------------------");
+            stringBuilder.Append("Выберите историю:\n");
 
             KeyboardBuilder keyboardBuilder = new KeyboardBuilder(true);
             for (int i = 0; i < stories.Count; i++)
@@ -59,12 +58,12 @@ namespace StoryBot.Messaging
                 stringBuilder.Append($"[ {i + 1} ] {x.Name}\n");
                 keyboardBuilder.AddButton(
                     $"[ {i + 1} ]",
-                    JsonConvert.SerializeObject(new Progress
+                    System.Web.HttpUtility.JavaScriptStringEncode(JsonConvert.SerializeObject(new Progress
                     {
                         Story = x.Name,
                         Storyline = x.Beginning,
                         Position = 0
-                    }),
+                    })),
                     KeyboardButtonColor.Primary);
             }
 
@@ -106,12 +105,12 @@ namespace StoryBot.Messaging
                     stringBuilder.Append($"[ {i + 1} ] {x.Content}\n");
 
                     keyboardBuilder.AddButton($"[ {i + 1} ]",
-                        JsonConvert.SerializeObject(new Progress
+                        System.Web.HttpUtility.JavaScriptStringEncode(JsonConvert.SerializeObject(new Progress
                         {
                             Story = payload.Story,
                             Storyline = x.Next ?? payload.Storyline,
                             Position = x.NextPosition
-                        }),
+                        })),
                         KeyboardButtonColor.Default);
                 }
 
@@ -154,6 +153,8 @@ namespace StoryBot.Messaging
                 stringBuilder.Append($"\nПоздравляем, вы получили альтернативную концовку \"{ending.Name}\"!\n\n");
                 stringBuilder.Append($"Эта история содержит еще {alternativeEndingsCount - 1} альтернативные концовки и одну каноничную.");
             }
+
+            stringBuilder.Append("\nТеперь вы можете пройти эту историю еще раз или выбрать другую");
 
             vkApi.Messages.Send(new MessagesSendParams
             {
