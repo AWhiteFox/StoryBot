@@ -1,5 +1,6 @@
 ﻿using NLog;
 using NLog.Targets;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -8,19 +9,13 @@ namespace StoryBot.Logging
     [Target("Discord")]
     public sealed class NLogTargetDiscord : TargetWithLayout
     {
-        private DiscordWebhook discord;
+        private readonly DiscordWebhook discord;
 
         public NLogTargetDiscord()
         {
-            if (DiscordId != null && DiscordToken != null)
-            {
-                discord = new DiscordWebhook(DiscordId, DiscordToken);
-            }
+            discord = new DiscordWebhook(Environment.GetEnvironmentVariable("DISCORD_WEBHOOKID"),
+                                         Environment.GetEnvironmentVariable("DISCORD_WEBHOOKTOKEN"));
         }
-
-        public static string DiscordId { get; set; }
-
-        public static string DiscordToken { get; set; }
 
         protected override void Write(LogEventInfo logEvent)
         {

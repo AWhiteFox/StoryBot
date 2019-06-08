@@ -17,13 +17,10 @@ namespace StoryBot.Controllers
     {
         private static readonly NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
-        private readonly IConfiguration configuration;
-
         private readonly MessagesHandler messagesHandler;
 
-        public CallbackController(IConfiguration configuration, IVkApi vkApi, MongoDB.Driver.IMongoDatabase database)
+        public CallbackController(IVkApi vkApi, MongoDB.Driver.IMongoDatabase database)
         {
-            this.configuration = configuration;
             messagesHandler = new MessagesHandler(vkApi,
                                                 new StoriesHandler(database.GetCollection<StoryDocument>("stories")),
                                                 new SavesHandler(database.GetCollection<SaveDocument>("saves")));

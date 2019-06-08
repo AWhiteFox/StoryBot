@@ -13,11 +13,7 @@ namespace StoryBot
     {
         public static void Main(string[] args)
         {
-            Logging.NLogTargetDiscord.DiscordId = Environment.GetEnvironmentVariable("DISCORD_WEBHOOKID");
-            Logging.NLogTargetDiscord.DiscordToken = Environment.GetEnvironmentVariable("DISCORD_WEBHOOKTOKEN");
-
             Target.Register<Logging.NLogTargetDiscord>("Discord");
-
             NLog.Logger logger = NLogBuilder.ConfigureNLog("NLog.config").GetCurrentClassLogger();
 
             try
