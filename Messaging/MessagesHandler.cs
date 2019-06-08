@@ -19,9 +19,9 @@ namespace StoryBot.Messaging
 
         private readonly SavesHandler savesHandler;
 
-        public MessagesHandler(IVkApi _api, StoriesHandler _storiesHandler, SavesHandler _savesHandler)
+        public MessagesHandler(IVkApi _vkApi, StoriesHandler _storiesHandler, SavesHandler _savesHandler)
         {
-            vkApi = _api;
+            vkApi = _vkApi;
             storiesHandler = _storiesHandler;
             savesHandler = _savesHandler;
         }
@@ -76,6 +76,11 @@ namespace StoryBot.Messaging
             });
         }
 
+        /// <summary>
+        /// Sends an error message to user
+        /// </summary>
+        /// <param name="peerId"></param>
+        /// <param name="content"></param>
         public void SendError(long peerId, string content)
         {
             vkApi.Messages.Send(new MessagesSendParams
@@ -84,6 +89,15 @@ namespace StoryBot.Messaging
                 PeerId = peerId,
                 Message = $"Во время обработки вашего сообщения произошла непредвиденная ошибка: {content}\nПожалуйста сообщите администрации"
             });
+        }
+
+        /// <summary>
+        /// Sends content and keyboard again
+        /// </summary>
+        /// <param name="peerId"></param>
+        public void SendAgain(long peerId)
+        {
+            SendContent(peerId, savesHandler.GetProgress(peerId));
         }
 
         /// <summary>

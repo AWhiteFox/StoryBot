@@ -70,6 +70,9 @@ namespace StoryBot.Controllers
                             case "reset":
                                 messagesHandler.SendMenu(peerId);
                                 return;
+                            case "repeat":
+                                messagesHandler.SendAgain(peerId);
+                                return;
                         }
                     }
                     else if (content.Payload != null)
