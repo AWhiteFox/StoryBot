@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using StoryBot.Messaging;
+using StoryBot.Logic;
 using StoryBot.Model;
 using System;
 using VkNet.Abstractions;

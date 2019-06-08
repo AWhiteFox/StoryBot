@@ -2,7 +2,7 @@
 using StoryBot.Model;
 using System.Collections.Generic;
 
-namespace StoryBot.Messaging
+namespace StoryBot.Logic
 {
     public class StoriesHandler
     {

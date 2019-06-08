@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace StoryBot.Messaging
+namespace StoryBot.Logic
 {
     public class SavesHandler
     {

@@ -9,7 +9,7 @@ using VkNet.Model.Keyboard;
 using VkNet.Model.RequestParams;
 using VkNet.Utils;
 
-namespace StoryBot.Messaging
+namespace StoryBot.Logic
 {
     public class MessagesHandler
     {
