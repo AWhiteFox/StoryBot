@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
+using System;
 using VkNet;
 using VkNet.Abstractions;
 using VkNet.Model;
@@ -27,13 +28,13 @@ namespace StoryBot
             services.AddSingleton<IVkApi>(sp => 
             {
                 VkApi api = new VkApi();
-                api.Authorize(new ApiAuthParams { AccessToken = Configuration["Config:AccessToken"] });
+                api.Authorize(new ApiAuthParams { AccessToken = Environment.GetEnvironmentVariable("VK_ACCESSTOKEN") });
                 return api;
             });
 
             services.AddSingleton(sp =>
             {
-                MongoClient client = new MongoClient(Configuration["Config:MongoURI"]);
+                MongoClient client = new MongoClient(Environment.GetEnvironmentVariable("MONGODB_URI"));
                 return client.GetDatabase("StoryBot");
             });
         }

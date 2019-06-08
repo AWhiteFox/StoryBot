@@ -37,7 +37,7 @@ namespace StoryBot.Controllers
                 switch (update.Type)
                 {
                     case "confirmation":
-                        return Ok(configuration["Config:Confirmation"]);
+                        return Ok(Environment.GetEnvironmentVariable("VK_CONFIGURATION"));
                     case "message_new":
                         NewMessage(update.Object);
                         break;

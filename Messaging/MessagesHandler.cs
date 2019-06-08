@@ -219,7 +219,7 @@ namespace StoryBot.Messaging
                 stringBuilder.Append($"Эта история содержит еще {alternativeEndingsCount - 1} альтернативные концовки и одну каноничную.");
             }
 
-            stringBuilder.Append("\nТеперь вы можете пройти эту историю еще раз или выбрать другую");
+            stringBuilder.Append("\nТеперь вы можете пройти её еще раз или выбрать другую");
 
             vkApi.Messages.Send(new MessagesSendParams
             {
