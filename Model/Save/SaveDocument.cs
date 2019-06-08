@@ -12,9 +12,12 @@ namespace StoryBot.Model
         public long Id { get; set; }
 
         [BsonElement("current")]
-        public Progress Current { get; set; }
+        public SaveProgress Current { get; set; }
 
         [BsonElement("endings")]
-        public SaveEnding[] Endings { get; set; }
+        public SaveEndings[] Endings { get; set; }
+
+        [BsonElement("achievements")]
+        public SaveAchievements[] Achievements { get; set; }
     }
 }

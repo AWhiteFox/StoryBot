@@ -17,7 +17,7 @@ namespace StoryBot.Logic
             collection =_collection;
         }
 
-        public void SaveProgress(long id, Progress progress)
+        public void SaveProgress(long id, SaveProgress progress)
         {
             FilterDefinition<SaveDocument> filter = Builders<SaveDocument>.Filter.Eq("id", id);
             var results = collection.Find(filter);
@@ -31,13 +31,17 @@ namespace StoryBot.Logic
             }
             catch (InvalidOperationException)
             {
-                logger.Info($"Save for {id} not found. Creating one...");
-                CreateSave(id);
-                SaveProgress(id, progress);
+                if (results.CountDocuments() == 0)
+                {
+                    logger.Info($"Save for {id} not found. Creating one...");
+                    CreateSave(id);
+                    SaveProgress(id, progress);
+                }
+                else throw;
             }
         }
 
-        public Progress GetProgress(long id)
+        public SaveProgress GetProgress(long id)
         {
             var results = collection.Find(Builders<SaveDocument>.Filter.Eq("id", id));
             try
@@ -76,9 +80,7 @@ namespace StoryBot.Logic
         {
             collection.InsertOne(new SaveDocument
             {
-                Id = id,
-                Current = null,
-                Endings = null
+                Id = id
             });
         }
     }

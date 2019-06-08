@@ -2,7 +2,7 @@
 
 namespace StoryBot.Model
 {
-    public class SaveEnding
+    public class SaveEndings
     {
         [BsonElement("tag")]
         public string QuestTag { get; set; }

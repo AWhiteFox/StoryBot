@@ -22,5 +22,8 @@ namespace StoryBot.Model
 
         [BsonElement("endings")]
         public StoryEnding[] Endings { get; set; }
+
+        [BsonElement("achievements")]
+        public StoryAchievement[] Achievements { get; set; }
     }
 }

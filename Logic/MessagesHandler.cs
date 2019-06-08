@@ -58,7 +58,7 @@ namespace StoryBot.Logic
                 stringBuilder.Append($"[ {i + 1} ] {x.Name}\n");
                 keyboardBuilder.AddButton(
                     $"[ {i + 1} ]",
-                    System.Web.HttpUtility.JavaScriptStringEncode(JsonConvert.SerializeObject(new Progress
+                    System.Web.HttpUtility.JavaScriptStringEncode(JsonConvert.SerializeObject(new SaveProgress
                     {
                         Story = x.Tag,
                         Storyline = x.Beginning,
@@ -109,7 +109,7 @@ namespace StoryBot.Logic
         {
             try
             {
-                Progress progress = savesHandler.GetProgress(peerId);
+                SaveProgress progress = savesHandler.GetProgress(peerId);
                 StoryDocument story = storiesHandler.GetStory(progress.Story);
 
                 StoryOption storyOption = Array
@@ -140,14 +140,14 @@ namespace StoryBot.Logic
         /// <param name="payload"></param>
         public void HandleKeyboard(long peerId, string payload)
         {
-            SendContent(peerId, JsonConvert.DeserializeObject<Progress>(payload));
+            SendContent(peerId, JsonConvert.DeserializeObject<SaveProgress>(payload));
         }
 
         /// <summary>
         /// Sends basic message with content and options
         /// </summary>
         /// <param name="progress"></param>
-        private void SendContent(long peerId, Progress progress, StoryDocument story = null)
+        private void SendContent(long peerId, SaveProgress progress, StoryDocument story = null)
         {
             story = story ?? storiesHandler.GetStory(progress.Story);
 
@@ -156,6 +156,11 @@ namespace StoryBot.Logic
                 StorylineElement storylineElement = Array.Find(story.Story, x => x.Tag == progress.Storyline).Elements[progress.Position];
 
                 StringBuilder stringBuilder = new StringBuilder();
+                if (progress.Achievement != null)
+                {
+                    stringBuilder.Append(""); //get achievement
+                }
+
                 foreach (string x in storylineElement.Content)
                 {
                     stringBuilder.Append(x + "\n");
@@ -170,11 +175,12 @@ namespace StoryBot.Logic
                     stringBuilder.Append($"[ {i + 1} ] {x.Content}\n");
 
                     keyboardBuilder.AddButton($"[ {i + 1} ]",
-                        System.Web.HttpUtility.JavaScriptStringEncode(JsonConvert.SerializeObject(new Progress
+                        System.Web.HttpUtility.JavaScriptStringEncode(JsonConvert.SerializeObject(new SaveProgress
                         {
                             Story = progress.Story,
                             Storyline = x.Storyline ?? progress.Storyline,
-                            Position = x.Position
+                            Position = x.Position,
+                            Achievement = x.Achievement
                         })),
                         KeyboardButtonColor.Default);
                 }

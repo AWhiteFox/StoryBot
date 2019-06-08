@@ -1,11 +1,9 @@
 ﻿using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using NLog.Targets;
 using NLog.Web;
 using System;
-using System.IO;
 
 namespace StoryBot
 {

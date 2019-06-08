@@ -5,7 +5,7 @@ using System;
 namespace StoryBot.Model
 {
     [Serializable]
-    public class Progress
+    public class SaveProgress
     {
         [JsonProperty("story")]
         [BsonElement("story")]
@@ -18,5 +18,9 @@ namespace StoryBot.Model
         [JsonProperty("position")]
         [BsonElement("position")]
         public int Position { get; set; }
+
+        [JsonProperty("achievement")]
+        [BsonElement("achievement")]
+        public int? Achievement { get; set; }
     }
 }
