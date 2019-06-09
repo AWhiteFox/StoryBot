@@ -64,16 +64,62 @@ namespace StoryBot.Logic
         {
             FilterDefinition<SaveDocument> filter = Builders<SaveDocument>.Filter.Eq("id", id);
 
-            SaveDocument save = collection.Find(filter).Single();
-            int questIndex = Array.FindIndex(save.Endings, x => x.QuestTag == questTag);
+            var results = collection.Find(filter);
+            SaveDocument save;
+            try
+            {
+                save = results.Single();
+                int questIndex = Array.FindIndex(save.Endings, x => x.QuestTag == questTag);
 
-            List<int> list = new List<int>();
-            list.AddRange(save.Endings[questIndex].ObtainedEndings);
-            if (!list.Contains(ending)) list.Add(ending);
-            list.Sort();
-            save.Endings[questIndex].ObtainedEndings = list.ToArray();
+                List<int> list = new List<int>();
+                list.AddRange(save.Endings[questIndex].ObtainedEndings);
+                if (!list.Contains(ending)) list.Add(ending);
+                list.Sort();
+                save.Endings[questIndex].ObtainedEndings = list.ToArray();
 
-            collection.ReplaceOne(filter, save);
+                collection.ReplaceOne(filter, save);
+            }
+            catch (InvalidOperationException)
+            {
+                if (results.CountDocuments() == 0)
+                {
+                    logger.Info($"Save for {id} not found. Creating one...");
+                    CreateSave(id);
+                    SaveObtainedEnding(id, questTag, ending);
+                }
+                else throw;
+            }
+        }
+
+        public void SaveObtainedAchievement(long id, string questTag, int achievement)
+        {
+            FilterDefinition<SaveDocument> filter = Builders<SaveDocument>.Filter.Eq("id", id);
+
+            var results = collection.Find(filter);
+            SaveDocument save;
+            try
+            {
+                save = results.Single();
+                int questIndex = Array.FindIndex(save.Achievements, x => x.QuestTag == questTag);
+
+                List<int> list = new List<int>();
+                list.AddRange(save.Achievements[questIndex].ObtainedAchievements);
+                if (!list.Contains(achievement)) list.Add(achievement);
+                list.Sort();
+                save.Achievements[questIndex].ObtainedAchievements = list.ToArray();
+
+                collection.ReplaceOne(filter, save);
+            }
+            catch (InvalidOperationException)
+            {
+                if (results.CountDocuments() == 0)
+                {
+                    logger.Info($"Save for {id} not found. Creating one...");
+                    CreateSave(id);
+                    SaveObtainedAchievement(id, questTag, achievement);
+                }
+                else throw;
+            }
         }
 
         private void CreateSave(long id)
