@@ -158,9 +158,10 @@ namespace StoryBot.Logic
                 StringBuilder stringBuilder = new StringBuilder();
                 if (progress.Achievement != null)
                 {
-                    stringBuilder.Append(""); //get achievement
+                    var achievement = story.Achievements[(int)progress.Achievement];
+                    stringBuilder.Append($"Вы заработали достижение {achievement.Name}!\n - {achievement.Description}\n\n");
+                    savesHandler.SaveObtainedAchievement(peerId, story.Tag, (int)progress.Achievement);
                 }
-
                 foreach (string x in storylineElement.Content)
                 {
                     stringBuilder.Append(x + "\n");

@@ -17,6 +17,31 @@ namespace StoryBot.Logic
             collection =_collection;
         }
 
+        #region Get
+
+        public SaveProgress GetProgress(long id)
+        {
+            var results = collection.Find(Builders<SaveDocument>.Filter.Eq("id", id));
+            try
+            {
+                return results.Single().Current;
+            }
+            catch (InvalidOperationException)
+            {
+                if (results.CountDocuments() == 0)
+                {
+                    logger.Info($"Save for {id} not found. Creating one...");
+                    CreateSave(id);
+                    return GetProgress(id);
+                }
+                else throw;
+            }
+        }
+
+        #endregion
+
+        #region Save
+
         public void SaveProgress(long id, SaveProgress progress)
         {
             FilterDefinition<SaveDocument> filter = Builders<SaveDocument>.Filter.Eq("id", id);
@@ -36,25 +61,6 @@ namespace StoryBot.Logic
                     logger.Info($"Save for {id} not found. Creating one...");
                     CreateSave(id);
                     SaveProgress(id, progress);
-                }
-                else throw;
-            }
-        }
-
-        public SaveProgress GetProgress(long id)
-        {
-            var results = collection.Find(Builders<SaveDocument>.Filter.Eq("id", id));
-            try
-            {
-                return results.Single().Current;
-            }
-            catch (InvalidOperationException)
-            {
-                if (results.CountDocuments() == 0)
-                {
-                    logger.Info($"Save for {id} not found. Creating one...");
-                    CreateSave(id);
-                    return GetProgress(id);
                 }
                 else throw;
             }
@@ -121,6 +127,8 @@ namespace StoryBot.Logic
                 else throw;
             }
         }
+
+        #endregion
 
         private void CreateSave(long id)
         {
