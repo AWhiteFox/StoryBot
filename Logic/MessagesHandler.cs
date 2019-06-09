@@ -130,6 +130,7 @@ namespace StoryBot.Logic
 
                     progress.Storyline = storyOption.Storyline ?? progress.Storyline;
                     progress.Position = storyOption.Position;
+                    progress.Achievement = storyOption.Achievement;
                 }
                 else
                 {
