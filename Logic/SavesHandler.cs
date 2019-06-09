@@ -17,125 +17,122 @@ namespace StoryBot.Logic
             collection =_collection;
         }
 
-        #region Get
+        #region Public methods
 
-        public SaveProgress GetProgress(long id)
+        public SaveProgress GetCurrent(long id)
         {
-            var results = collection.Find(Builders<SaveDocument>.Filter.Eq("id", id));
-            try
-            {
-                return results.Single().Current;
-            }
-            catch (InvalidOperationException)
-            {
-                if (results.CountDocuments() == 0)
-                {
-                    logger.Info($"Save for {id} not found. Creating one...");
-                    CreateSave(id);
-                    return GetProgress(id);
-                }
-                else throw;
-            }
+            return GetSave(id).Current;
         }
-
-        #endregion
-
-        #region Save
 
         public void SaveProgress(long id, SaveProgress progress)
         {
-            FilterDefinition<SaveDocument> filter = Builders<SaveDocument>.Filter.Eq("id", id);
-            var results = collection.Find(filter);
-
-            try
-            {
-                SaveDocument save = results.Single();
-                save.Current = progress;
-
-                collection.ReplaceOne(filter, save);
-            }
-            catch (InvalidOperationException)
-            {
-                if (results.CountDocuments() == 0)
-                {
-                    logger.Info($"Save for {id} not found. Creating one...");
-                    CreateSave(id);
-                    SaveProgress(id, progress);
-                }
-                else throw;
-            }
+            SaveDocument save = GetSave(id);
+            save.Current = progress;
+            UpdateSave(id, save);
         }
 
-        public void SaveObtainedEnding(long id, string questTag, int ending)
+        public void SaveObtainedEnding(long id, int storyId, int ending)
         {
-            FilterDefinition<SaveDocument> filter = Builders<SaveDocument>.Filter.Eq("id", id);
-
-            var results = collection.Find(filter);
-            SaveDocument save;
+            SaveDocument save = GetSave(id);
             try
             {
-                save = results.Single();
-                int questIndex = Array.FindIndex(save.Endings, x => x.QuestTag == questTag);
+                int questIndex = Array.FindIndex(save.Endings, x => x.StoryId == storyId);
 
-                List<int> list = new List<int>();
-                list.AddRange(save.Endings[questIndex].ObtainedEndings);
+                List<int> list = save.Endings[questIndex].ObtainedEndings.ToList();
                 if (!list.Contains(ending)) list.Add(ending);
                 list.Sort();
                 save.Endings[questIndex].ObtainedEndings = list.ToArray();
 
-                collection.ReplaceOne(filter, save);
+                UpdateSave(id, save);
             }
-            catch (InvalidOperationException)
+            catch (Exception exception)
             {
-                if (results.CountDocuments() == 0)
+                if (exception is ArgumentNullException || exception is IndexOutOfRangeException)
                 {
-                    logger.Info($"Save for {id} not found. Creating one...");
-                    CreateSave(id);
-                    SaveObtainedEnding(id, questTag, ending);
+                    if (save.Endings == null)
+                    {
+                        save.Endings = new SaveEndings[0];
+                    }
+                    List<SaveEndings> list = save.Endings.ToList();
+                    list.Add(new SaveEndings { StoryId = storyId, ObtainedEndings = new int[0] });
+                    save.Endings = list.OrderBy(x => x.StoryId).ToArray();
+
+                    UpdateSave(id, save);
+
+                    SaveObtainedEnding(id, storyId, ending);
                 }
-                else throw;
+                else
+                {
+                    throw;
+                }
             }
         }
 
-        public void SaveObtainedAchievement(long id, string questTag, int achievement)
+        public void SaveObtainedAchievement(long id, int storyId, int achievement)
         {
-            FilterDefinition<SaveDocument> filter = Builders<SaveDocument>.Filter.Eq("id", id);
-
-            var results = collection.Find(filter);
-            SaveDocument save;
+            SaveDocument save = GetSave(id);
             try
             {
-                save = results.Single();
-                int questIndex = Array.FindIndex(save.Achievements, x => x.QuestTag == questTag);
+                int questIndex = Array.FindIndex(save.Achievements, x => x.StoryId == storyId);
 
-                List<int> list = new List<int>();
-                list.AddRange(save.Achievements[questIndex].ObtainedAchievements);
+                List<int> list = save.Achievements[questIndex].ObtainedAchievements.ToList();
                 if (!list.Contains(achievement)) list.Add(achievement);
                 list.Sort();
                 save.Achievements[questIndex].ObtainedAchievements = list.ToArray();
 
-                collection.ReplaceOne(filter, save);
+                UpdateSave(id, save);
+            }
+            catch (Exception exception)
+            {
+                if (exception is ArgumentNullException || exception is IndexOutOfRangeException)
+                {
+                    if (save.Achievements == null)
+                    {
+                        save.Achievements = new SaveAchievements[0];
+                    }
+                    List<SaveAchievements> list = save.Achievements.ToList();
+                    list.Add(new SaveAchievements { StoryId = storyId, ObtainedAchievements = new int[0] });
+                    save.Achievements = list.OrderBy(x => x.StoryId).ToArray();
+
+                    UpdateSave(id, save);
+
+                    SaveObtainedAchievement(id, storyId, achievement);
+                }
+                else
+                {
+                    throw;
+                }
+            } 
+        }
+
+        #endregion
+
+        #region Private methods
+
+        private SaveDocument GetSave(long id)
+        {
+            var results = collection.Find(Builders<SaveDocument>.Filter.Eq("id", id));
+            try
+            {
+                return results.Single();
             }
             catch (InvalidOperationException)
             {
                 if (results.CountDocuments() == 0)
                 {
                     logger.Info($"Save for {id} not found. Creating one...");
-                    CreateSave(id);
-                    SaveObtainedAchievement(id, questTag, achievement);
+                    collection.InsertOne(new SaveDocument { Id = id });
+                    return GetSave(id);
                 }
                 else throw;
             }
         }
 
-        #endregion
-
-        private void CreateSave(long id)
+        private void UpdateSave(long id, SaveDocument save)
         {
-            collection.InsertOne(new SaveDocument
-            {
-                Id = id
-            });
+            collection.ReplaceOne(Builders<SaveDocument>.Filter.Eq("id", id), save);
         }
+
+        #endregion
     }
 }

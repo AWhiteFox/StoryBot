@@ -51,21 +51,28 @@ namespace StoryBot.Logic
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.Append("Выберите историю:\n");
 
-            KeyboardBuilder keyboardBuilder = new KeyboardBuilder(true);
-            for (int i = 0; i < stories.Count; i++)
+            SortedDictionary<int, StoryDocument> sorted = new SortedDictionary<int, StoryDocument>();
+            foreach (StoryDocument story in stories)
             {
-                var x = stories[i];
-                stringBuilder.Append($"[ {i + 1} ] {x.Name}\n");
+                sorted.Add(story.Id, story);
+            }
+
+            KeyboardBuilder keyboardBuilder = new KeyboardBuilder(true);
+            foreach (KeyValuePair<int, StoryDocument> entry in sorted)
+            {
+                stringBuilder.Append($"[ {entry.Key + 1} ] {entry.Value.Name}\n");
                 keyboardBuilder.AddButton(
-                    $"[ {i + 1} ]",
+                    $"[ {entry.Key + 1} ]",
                     System.Web.HttpUtility.JavaScriptStringEncode(JsonConvert.SerializeObject(new SaveProgress
                     {
-                        Story = x.Tag,
-                        Storyline = x.Beginning,
+                        Story = entry.Value.Id,
+                        Storyline = entry.Value.Beginning,
                         Position = 0
                     })),
                     KeyboardButtonColor.Primary);
             }
+
+            savesHandler.SaveProgress(peerId, new SaveProgress());
 
             vkApi.Messages.Send(new MessagesSendParams
             {
@@ -87,7 +94,7 @@ namespace StoryBot.Logic
             {
                 RandomId = new DateTime().Millisecond,
                 PeerId = peerId,
-                Message = $"Во время обработки вашего сообщения произошла непредвиденная ошибка: {content}\nПожалуйста сообщите администрации"
+                Message = $"Во время обработки вашего сообщения произошла непредвиденная ошибка:\n\n{content}\n\nПожалуйста сообщите администрации"
             });
         }
 
@@ -97,7 +104,7 @@ namespace StoryBot.Logic
         /// <param name="peerId"></param>
         public void SendAgain(long peerId)
         {
-            SendContent(peerId, savesHandler.GetProgress(peerId));
+            SendContent(peerId, savesHandler.GetCurrent(peerId));
         }
 
         /// <summary>
@@ -109,17 +116,29 @@ namespace StoryBot.Logic
         {
             try
             {
-                SaveProgress progress = savesHandler.GetProgress(peerId);
-                StoryDocument story = storiesHandler.GetStory(progress.Story);
+                SaveProgress progress = savesHandler.GetCurrent(peerId);
 
-                StoryOption storyOption = Array
-                    .Find(story.Story, x => x.Tag == progress.Storyline)
-                    .Elements[progress.Position]
-                    .Options[number];
+                StoryDocument story;
+                if (progress.Story != null)
+                {
+                    story = storiesHandler.GetStory((int)progress.Story);
 
-                progress.Storyline = storyOption.Storyline ?? progress.Storyline;
-                progress.Position = storyOption.Position;
+                    StoryOption storyOption = Array
+                        .Find(story.Story, x => x.Tag == (progress.Storyline ?? story.Beginning))
+                        .Elements[progress.Position]
+                        .Options[number];
 
+                    progress.Storyline = storyOption.Storyline ?? progress.Storyline;
+                    progress.Position = storyOption.Position;
+                }
+                else
+                {
+                    story = storiesHandler.GetStory(number);
+
+                    progress.Story = number;
+                    progress.Storyline = story.Beginning;
+                    progress.Position = 0;
+                }
                 SendContent(peerId, progress, story);
             }
             catch (IndexOutOfRangeException)
@@ -144,15 +163,36 @@ namespace StoryBot.Logic
         }
 
         /// <summary>
+        /// Gets date of last message in conversat
+        /// </summary>
+        /// <param name="peerId"></param>
+        /// <returns></returns>
+        public DateTime? GetLastMessageDate(long peerId)
+        {
+            try
+            {
+                return vkApi.Messages.GetHistory(new MessagesGetHistoryParams { Count = 1, PeerId = peerId }).Messages.ToCollection()[0].Date;
+            }
+            catch (VkNet.Exception.ParameterMissingOrInvalidException)
+            {
+                return DateTime.MinValue;
+            }
+        }
+
+        #region Private methods
+
+        /// <summary>
         /// Sends basic message with content and options
         /// </summary>
         /// <param name="progress"></param>
         private void SendContent(long peerId, SaveProgress progress, StoryDocument story = null)
         {
-            story = story ?? storiesHandler.GetStory(progress.Story);
+            story = story ?? storiesHandler.GetStory((int)progress.Story);
 
             if (progress.Storyline != "Ending")
             {
+                savesHandler.SaveProgress(peerId, progress);
+
                 StorylineElement storylineElement = Array.Find(story.Story, x => x.Tag == progress.Storyline).Elements[progress.Position];
 
                 StringBuilder stringBuilder = new StringBuilder();
@@ -160,7 +200,7 @@ namespace StoryBot.Logic
                 {
                     var achievement = story.Achievements[(int)progress.Achievement];
                     stringBuilder.Append($"Вы заработали достижение {achievement.Name}!\n - {achievement.Description}\n\n");
-                    savesHandler.SaveObtainedAchievement(peerId, story.Tag, (int)progress.Achievement);
+                    savesHandler.SaveObtainedAchievement(peerId, story.Id, (int)progress.Achievement);
                 }
                 foreach (string x in storylineElement.Content)
                 {
@@ -185,18 +225,18 @@ namespace StoryBot.Logic
                         })),
                         KeyboardButtonColor.Default);
                 }
-
+                
                 vkApi.Messages.Send(new MessagesSendParams
                 {
                     RandomId = new DateTime().Millisecond,
                     PeerId = peerId,
                     Message = stringBuilder.ToString(),
                     Keyboard = keyboardBuilder.Build()
-                });
-                savesHandler.SaveProgress(peerId, progress);
+                });               
             }
             else
             {
+                savesHandler.SaveObtainedEnding(peerId, story.Id, progress.Position);
                 SendEnding(peerId, story.Endings[progress.Position], story.Endings.Length - 1);
             }
         }
@@ -237,16 +277,6 @@ namespace StoryBot.Logic
             SendMenu(peerId);
         }
 
-        public DateTime? GetLastMessageDate(long peerId)
-        {
-            try
-            {
-                return vkApi.Messages.GetHistory(new MessagesGetHistoryParams { Count = 1, PeerId = peerId }).Messages.ToCollection()[0].Date;
-            }
-            catch (VkNet.Exception.ParameterMissingOrInvalidException)
-            {
-                return DateTime.MinValue;
-            }
-        }
+        #endregion
     }
 }

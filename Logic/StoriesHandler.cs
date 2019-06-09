@@ -13,9 +13,9 @@ namespace StoryBot.Logic
             collection = _collection;
         }
 
-        public StoryDocument GetStory(string tag)
+        public StoryDocument GetStory(int id)
         {
-            return collection.Find(Builders<StoryDocument>.Filter.Eq("tag", tag)).Single();
+            return collection.Find(Builders<StoryDocument>.Filter.Eq("id", id)).Single();
         }
 
         public List<StoryDocument> GetAllStories()

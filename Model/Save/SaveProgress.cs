@@ -9,7 +9,7 @@ namespace StoryBot.Model
     {
         [JsonProperty("story")]
         [BsonElement("story")]
-        public string Story { get; set; }
+        public int? Story { get; set; }
 
         [JsonProperty("storyline")]
         [BsonElement("storyline")]

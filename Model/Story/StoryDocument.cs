@@ -8,8 +8,8 @@ namespace StoryBot.Model
         [BsonId]
         public ObjectId ObjectId { get; set; }
 
-        [BsonElement("tag")]
-        public string Tag { get; set; }
+        [BsonElement("id")]
+        public int Id { get; set; }
 
         [BsonElement("name")]
         public string Name { get; set; }
