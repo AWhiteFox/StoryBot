@@ -13,14 +13,20 @@ namespace StoryBot.Logic
             collection = _collection;
         }
 
-        public StoryDocument GetStory(int id)
+        public StoryDocument GetStory(int id, int chapter)
         {
-            return collection.Find(Builders<StoryDocument>.Filter.Eq("id", id)).Single();
+            var filter = Builders<StoryDocument>.Filter;
+            return collection.Find(filter.Eq("id", id) & filter.Eq("chapter", chapter)).Single();
         }
 
         public List<StoryDocument> GetAllStories()
         {
-            return collection.Find(Builders<StoryDocument>.Filter.Empty).ToList();
+            return collection.Find(Builders<StoryDocument>.Filter.Eq("chapter", 0)).ToList();
+        }
+
+        public List<StoryDocument> GetStoryChapters(int storyId)
+        {
+            return collection.Find(Builders<StoryDocument>.Filter.Eq("id", storyId)).ToList();
         }
     }
 }

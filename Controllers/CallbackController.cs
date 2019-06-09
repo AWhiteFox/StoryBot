@@ -64,7 +64,7 @@ namespace StoryBot.Controllers
                                 messagesHandler.SendHelloWorld(peerId);
                                 return;
                             case "reset":
-                                messagesHandler.SendMenu(peerId);
+                                messagesHandler.SendStoryChoice(peerId);
                                 return;
                             case "repeat":
                                 messagesHandler.SendAgain(peerId);

@@ -11,6 +11,10 @@ namespace StoryBot.Model
         [BsonElement("story")]
         public int? Story { get; set; }
 
+        [JsonProperty("chapter")]
+        [BsonElement("chapter")]
+        public int? Chapter { get; set; }
+
         [JsonProperty("storyline")]
         [BsonElement("storyline")]
         public string Storyline { get; set; }

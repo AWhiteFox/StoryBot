@@ -11,11 +11,17 @@ namespace StoryBot.Model
         [BsonElement("id")]
         public int Id { get; set; }
 
+        [BsonElement("chapter")]
+        public int Chapter { get; set; }
+
         [BsonElement("name")]
         public string Name { get; set; }
 
-        [BsonElement("story")]
-        public Storyline[] Story { get; set; }
+        [BsonElement("chapter_name")]
+        public string ChapterName { get; set; }
+
+        [BsonElement("storylines")]
+        public Storyline[] Storylines { get; set; }
 
         [BsonElement("beginning")]
         public string Beginning { get; set; }

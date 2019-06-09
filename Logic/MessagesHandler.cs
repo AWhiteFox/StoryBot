@@ -44,7 +44,7 @@ namespace StoryBot.Logic
         /// Sends a quest choosing dialog
         /// </summary>
         /// <param name="peerId"></param>
-        public void SendMenu(long peerId)
+        public void SendStoryChoice(long peerId)
         {
             List<StoryDocument> stories = storiesHandler.GetAllStories();
 
@@ -65,9 +65,7 @@ namespace StoryBot.Logic
                     $"[ {entry.Key + 1} ]",
                     System.Web.HttpUtility.JavaScriptStringEncode(JsonConvert.SerializeObject(new SaveProgress
                     {
-                        Story = entry.Value.Id,
-                        Storyline = entry.Value.Beginning,
-                        Position = 0
+                        Story = entry.Value.Id
                     })),
                     KeyboardButtonColor.Primary);
             }
@@ -121,24 +119,32 @@ namespace StoryBot.Logic
                 StoryDocument story;
                 if (progress.Story != null)
                 {
-                    story = storiesHandler.GetStory((int)progress.Story);
+                    if (progress.Chapter != null)
+                    {
+                        story = storiesHandler.GetStory((int)progress.Story, (int)progress.Chapter);
 
-                    StoryOption storyOption = Array
-                        .Find(story.Story, x => x.Tag == (progress.Storyline ?? story.Beginning))
-                        .Elements[progress.Position]
-                        .Options[number];
+                        StoryOption storyOption = Array
+                            .Find(story.Storylines, x => x.Tag == (progress.Storyline ?? story.Beginning))
+                            .Elements[progress.Position]
+                            .Options[number];
 
-                    progress.Storyline = storyOption.Storyline ?? progress.Storyline;
-                    progress.Position = storyOption.Position;
-                    progress.Achievement = storyOption.Achievement;
+                        progress.Storyline = storyOption.Storyline ?? progress.Storyline;
+                        progress.Position = storyOption.Position;
+                        progress.Achievement = storyOption.Achievement;
+                    }
+                    else
+                    {
+                        story = storiesHandler.GetStory((int)progress.Story, number);
+
+                        progress.Chapter = number;
+                        progress.Storyline = story.Beginning;
+                        progress.Position = 0;
+                    }
                 }
                 else
                 {
-                    story = storiesHandler.GetStory(number);
-
-                    progress.Story = number;
-                    progress.Storyline = story.Beginning;
-                    progress.Position = 0;
+                    SendChapterChoice(peerId, number);
+                    return;
                 }
                 SendContent(peerId, progress, story);
             }
@@ -158,9 +164,18 @@ namespace StoryBot.Logic
         /// </summary>
         /// <param name="peerId"></param>
         /// <param name="payload"></param>
-        public void HandleKeyboard(long peerId, string payload)
+        public void HandleKeyboard(long peerId, string _payload)
         {
-            SendContent(peerId, JsonConvert.DeserializeObject<SaveProgress>(payload));
+            SaveProgress payload = JsonConvert.DeserializeObject<SaveProgress>(_payload);
+
+            if (payload.Chapter != null)
+            {
+                SendContent(peerId, payload);
+            }
+            else
+            {
+                SendChapterChoice(peerId, (int)payload.Story);
+            } 
         }
 
         /// <summary>
@@ -182,19 +197,57 @@ namespace StoryBot.Logic
 
         #region Private methods
 
+        private void SendChapterChoice(long peerId, int storyId)
+        {
+            List<StoryDocument> stories = storiesHandler.GetAllStories();
+
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append("Выберите главу:\n");
+
+            SortedDictionary<int, StoryDocument> sorted = new SortedDictionary<int, StoryDocument>();
+            foreach (StoryDocument story in stories)
+            {
+                sorted.Add(story.Chapter, story);
+            }
+
+            KeyboardBuilder keyboardBuilder = new KeyboardBuilder(true);
+            foreach (KeyValuePair<int, StoryDocument> entry in sorted)
+            {
+                stringBuilder.Append($"[ {entry.Key + 1} ] {entry.Value.ChapterName}\n");
+                keyboardBuilder.AddButton(
+                    $"[ {entry.Key + 1} ]",
+                    System.Web.HttpUtility.JavaScriptStringEncode(JsonConvert.SerializeObject(new SaveProgress
+                    {
+                        Story = storyId,
+                        Chapter = entry.Value.Chapter,
+                        Storyline = entry.Value.Beginning,
+                        Position = 0
+                    })),
+                    KeyboardButtonColor.Primary);
+            }
+
+            vkApi.Messages.Send(new MessagesSendParams
+            {
+                RandomId = new DateTime().Millisecond,
+                PeerId = peerId,
+                Message = stringBuilder.ToString(),
+                Keyboard = keyboardBuilder.Build()
+            });
+        }
+        
         /// <summary>
         /// Sends basic message with content and options
         /// </summary>
         /// <param name="progress"></param>
         private void SendContent(long peerId, SaveProgress progress, StoryDocument story = null)
         {
-            story = story ?? storiesHandler.GetStory((int)progress.Story);
+            story = story ?? storiesHandler.GetStory((int)progress.Story, (int)progress.Chapter);
 
             if (progress.Storyline != "Ending")
             {
                 savesHandler.SaveProgress(peerId, progress);
 
-                StorylineElement storylineElement = Array.Find(story.Story, x => x.Tag == progress.Storyline).Elements[progress.Position];
+                StorylineElement storylineElement = Array.Find(story.Storylines, x => x.Tag == progress.Storyline).Elements[progress.Position];
 
                 StringBuilder stringBuilder = new StringBuilder();
                 if (progress.Achievement != null)
@@ -220,6 +273,7 @@ namespace StoryBot.Logic
                         System.Web.HttpUtility.JavaScriptStringEncode(JsonConvert.SerializeObject(new SaveProgress
                         {
                             Story = progress.Story,
+                            Chapter = progress.Chapter,
                             Storyline = x.Storyline ?? progress.Storyline,
                             Position = x.Position,
                             Achievement = x.Achievement
@@ -275,7 +329,7 @@ namespace StoryBot.Logic
                 PeerId = peerId,
                 Message = stringBuilder.ToString()
             });
-            SendMenu(peerId);
+            SendStoryChoice(peerId);
         }
 
         #endregion
