@@ -197,6 +197,11 @@ namespace StoryBot.Logic
 
         #region Private methods
 
+        /// <summary>
+        /// Sends a chapter choosing dialog
+        /// </summary>
+        /// <param name="peerId"></param>
+        /// <param name="storyId"></param>
         private void SendChapterChoice(long peerId, int storyId)
         {
             List<StoryDocument> stories = storiesHandler.GetAllStories();
@@ -213,7 +218,7 @@ namespace StoryBot.Logic
             KeyboardBuilder keyboardBuilder = new KeyboardBuilder(true);
             foreach (KeyValuePair<int, StoryDocument> entry in sorted)
             {
-                stringBuilder.Append($"[ {entry.Key + 1} ] {entry.Value.ChapterName}\n");
+                stringBuilder.Append($"Глава {entry.Key + 1}. {entry.Value.ChapterName}\n");
                 keyboardBuilder.AddButton(
                     $"[ {entry.Key + 1} ]",
                     System.Web.HttpUtility.JavaScriptStringEncode(JsonConvert.SerializeObject(new SaveProgress
