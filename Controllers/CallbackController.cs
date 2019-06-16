@@ -1,12 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using StoryBot.Logic;
 using StoryBot.Model;
 using System;
 using VkNet.Abstractions;
-using VkNet.Model;
-using VkNet.Utils;
 
 namespace StoryBot.Controllers
 {
@@ -21,8 +17,8 @@ namespace StoryBot.Controllers
         public CallbackController(IVkApi vkApi, MongoDB.Driver.IMongoDatabase database)
         {
             messagesHandler = new MessagesHandler(vkApi,
-                                                new StoriesHandler(database.GetCollection<StoryDocument>("stories")),
-                                                new SavesHandler(database.GetCollection<SaveDocument>("saves")));
+                new StoriesHandler(database.GetCollection<StoryDocument>("stories")),
+                new SavesHandler(database.GetCollection<SaveDocument>("saves")));
         }
 
         [HttpPost]
@@ -35,57 +31,18 @@ namespace StoryBot.Controllers
                     case "confirmation":
                         return Ok(Environment.GetEnvironmentVariable("VK_CONFIGURATION"));
                     case "message_new":
-                        NewMessage(update.Object);
-                        break;
+                        messagesHandler.HandleNew(update.Object);
+                        return Ok("ok");
+                    default:
+                        return BadRequest("Unknown event");
                 }
-                return Ok("ok");
             }
             catch (Exception exception)
             {
-                logger.Error(exception, "An error occured while handling request");
-                return BadRequest();
+                string str = "An error occurred while handling request";
+                logger.Error(exception, str);
+                return BadRequest(str);
             }            
-        }
-
-        private void NewMessage(JObject obj)
-        {
-            var content = Message.FromJson(new VkResponse(obj));
-            long peerId = content.PeerId.Value;
-
-            try
-            {
-                if (messagesHandler.GetLastMessageDate(peerId) <= content.Date)
-                {
-                    if (content.Text[0] == '!')
-                    {
-                        switch (content.Text.Remove(0, 1).ToLower())
-                        {
-                            case "helloworld":
-                                messagesHandler.SendHelloWorld(peerId);
-                                return;
-                            case "reset":
-                                messagesHandler.SendStoryChoice(peerId);
-                                return;
-                            case "repeat":
-                                messagesHandler.SendAgain(peerId);
-                                return;
-                        }
-                    }
-                    else if (content.Payload != null)
-                    {
-                        messagesHandler.HandleKeyboard(peerId, JsonConvert.DeserializeObject<CallbackNewMessagePayload>(content.Payload).Button);
-                    }
-                    else if (int.TryParse(content.Text, out int number))
-                    {
-                        messagesHandler.HandleNumber(peerId, number - 1);
-                    }
-                }
-            }
-            catch (Exception exception)
-            {
-                messagesHandler.SendError(peerId, exception.Message);
-                throw;
-            }
         }
     }
 }

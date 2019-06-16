@@ -4,7 +4,7 @@ using System;
 namespace StoryBot.Model
 {
     [Serializable]
-    public class CallbackNewMessagePayload
+    public class Payload
     {
         [JsonProperty("button")]
         public string Button { get; set; }
