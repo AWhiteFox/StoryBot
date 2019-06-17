@@ -16,7 +16,7 @@ namespace StoryBot
 
             try
             {
-                logger.Debug("INIT MAIN");
+                logger.Info("Initialization...");
                 CreateWebHostBuilder(args).Build().Run();
             }
             catch (Exception ex)

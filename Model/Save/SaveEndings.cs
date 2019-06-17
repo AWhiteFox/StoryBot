@@ -4,10 +4,13 @@ namespace StoryBot.Model
 {
     public class SaveEndings
     {
-        [BsonElement("id")]
+        [BsonElement("story_id")]
         public int StoryId { get; set; }
 
+        [BsonElement("chapter_id")]
+        public int ChapterId { get; set; }
+
         [BsonElement("obtained")]
-        public int[] ObtainedEndings { get; set; }
+        public int[] Obtained { get; set; }
     }
 }

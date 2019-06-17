@@ -46,18 +46,15 @@ namespace StoryBot.Logic
                 {
                     if (content.Text[0] == '!')
                     {
-                        switch (content.Text.Remove(0, 1).ToLower())
-                        {
-                            case "helloworld":
-                                SendHelloWorld(peerId);
-                                return;
-                            case "reset":
-                                SendStoryChoiceDialog(peerId);
-                                return;
-                            case "repeat":
-                                SendContent(peerId, savesHandler.GetCurrent(peerId)); ;
-                                return;
-                        }
+                        string x = content.Text.Remove(0, 1).ToLower();
+                        if (x == "helloworld")
+                            SendHelloWorld(peerId);
+                        else if (x.StartsWith("info") || x.StartsWith("stats"))
+                            SendStats(peerId);
+                        else if (x == "repeat")
+                            SendContent(peerId, savesHandler.GetSave(peerId).Current);
+                        else if (x == "reset")
+                            SendStoryChoiceDialog(peerId);
                     }
                     else if (content.Payload != null)
                     {
@@ -116,7 +113,10 @@ namespace StoryBot.Logic
         /// <param name="story"></param>
         private void SendContent(long peerId, SaveProgress progress, StoryDocument story = null)
         {
-            story = story ?? storiesHandler.GetStory((int)progress.Story, (int)progress.Chapter);
+            if (story == null)
+            {
+                story = storiesHandler.GetStoryChapter((int)progress.Story, (int)progress.Chapter);
+            }  
 
             if (progress.Storyline != "Ending")
             {
@@ -129,7 +129,7 @@ namespace StoryBot.Logic
                 {
                     var achievement = story.Achievements[(int)progress.Achievement];
                     stringBuilder.Append($"Вы заработали достижение {achievement.Name}!\n - {achievement.Description}\n\n");
-                    savesHandler.SaveObtainedAchievement(peerId, story.Id, (int)progress.Achievement);
+                    savesHandler.SaveObtainedAchievement(peerId, story.Id, story.Chapter, (int)progress.Achievement);
                 }
                 foreach (string x in storylineElement.Content)
                 {
@@ -166,7 +166,7 @@ namespace StoryBot.Logic
             }
             else
             {
-                savesHandler.SaveObtainedEnding(peerId, story.Id, progress.Position);
+                savesHandler.SaveObtainedEnding(peerId, story.Id, story.Chapter, progress.Position);
                 SendEnding(peerId, story.Endings[progress.Position], story.Endings.Length - 1);
             }
         }
@@ -205,6 +205,51 @@ namespace StoryBot.Logic
                 Message = stringBuilder.ToString()
             });
             SendStoryChoiceDialog(peerId);
+        }
+
+        /// <summary>
+        /// Sends short stories progress info
+        /// </summary>
+        /// <param name="peerId"></param>
+        private void SendStats(long peerId)
+        {
+            var save = savesHandler.GetSave(peerId);
+
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append("Полученные концовки:\n");
+            if (save.Endings != null)
+            {
+                foreach (var x in save.Endings)
+                {
+                    var endingsCount = storiesHandler.GetStoryChapter(x.StoryId, x.ChapterId).Endings.Length;
+                    stringBuilder.Append($"- {storiesHandler.GetStoryName(x.StoryId)}, Глава {x.ChapterId + 1}: {x.Obtained.Length}/{endingsCount}\n");
+                }
+            }
+            else
+            {
+                stringBuilder.Append("Нет данных\n");
+            }
+
+            stringBuilder.Append("\nПолученные достижения:\n");
+            if (save.Achievements != null)
+            {
+                foreach (var x in save.Achievements)
+                {
+                    var achievementsCount = storiesHandler.GetStoryChapter(x.StoryId, x.ChapterId).Achievements.Length;
+                    stringBuilder.Append($"- {storiesHandler.GetStoryName(x.StoryId)}, Глава {x.ChapterId + 1}: {x.Obtained.Length}/{achievementsCount}\n");
+                }
+            }
+            else
+            {
+                stringBuilder.Append("Нет данных\n");
+            }
+
+            vkApi.Messages.Send(new MessagesSendParams
+            {
+                RandomId = new DateTime().Millisecond,
+                PeerId = peerId,
+                Message = stringBuilder.ToString()
+            });
         }
 
         // Dialogs //
@@ -304,14 +349,14 @@ namespace StoryBot.Logic
         {
             try
             {
-                SaveProgress progress = savesHandler.GetCurrent(peerId);
+                SaveProgress progress = savesHandler.GetSave(peerId).Current;
 
                 StoryDocument story;
                 if (progress.Story != null)
                 {
                     if (progress.Chapter != null)
                     {
-                        story = storiesHandler.GetStory((int)progress.Story, (int)progress.Chapter);
+                        story = storiesHandler.GetStoryChapter((int)progress.Story, (int)progress.Chapter);
 
                         StoryOption storyOption = Array
                             .Find(story.Storylines, x => x.Tag == (progress.Storyline ?? story.Beginning))
@@ -324,7 +369,7 @@ namespace StoryBot.Logic
                     }
                     else
                     {
-                        story = storiesHandler.GetStory((int)progress.Story, number);
+                        story = storiesHandler.GetStoryChapter((int)progress.Story, number);
 
                         progress.Chapter = number;
                         progress.Storyline = story.Beginning;

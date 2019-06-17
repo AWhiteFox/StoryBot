@@ -5,10 +5,13 @@ namespace StoryBot.Model
 {
     public class SaveAchievements
     {
-        [BsonElement("id")]
+        [BsonElement("story_id")]
         public int StoryId { get; set; }
 
+        [BsonElement("chapter_id")]
+        public int ChapterId { get; set; }
+
         [BsonElement("obtained")]
-        public int[] ObtainedAchievements { get; set; }
+        public int[] Obtained { get; set; }
     }
 }
