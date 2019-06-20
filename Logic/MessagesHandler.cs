@@ -3,6 +3,7 @@ using Newtonsoft.Json.Linq;
 using StoryBot.Model;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using VkNet.Abstractions;
 using VkNet.Enums.SafetyEnums;
@@ -46,21 +47,15 @@ namespace StoryBot.Logic
                 {
                     if (content.Text[0] == '!')
                     {
-                        string x = content.Text.Remove(0, 1).ToLower();
-                        if (x == "helloworld")
-                            SendHelloWorld(peerId);
-                        else if (x.StartsWith("info") || x.StartsWith("stats"))
-                            SendStats(peerId);
-                        else if (x == "repeat")
-                            SendContent(peerId, savesHandler.GetSave(peerId).Current);
-                        else if (x == "reset")
-                            SendStoryChoiceDialog(peerId);
+                        string[] command = content.Text.Remove(0, 1).ToLower().Split(" ");
+                        HandleCommand(peerId, command[0], command.Skip(1).ToArray());
                     }
                     else if (content.Payload != null)
                     {
-                        if (int.TryParse(content.Text, out int number))
+                        if (content.Payload[0] == '!')
                         {
-                            //Handle payload command
+                            string[] command = content.Payload.Remove(0, 1).ToLower().Split(" ");
+                            HandleCommand(peerId, command[0], command.Skip(1).ToArray());
                         }
                         else
                         {
@@ -208,40 +203,101 @@ namespace StoryBot.Logic
         }
 
         /// <summary>
-        /// Sends short stories progress info
+        /// Sends story choice for stats dialog
         /// </summary>
         /// <param name="peerId"></param>
         private void SendStats(long peerId)
         {
-            var save = savesHandler.GetSave(peerId);
-
             StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.Append("Полученные концовки:\n");
-            if (save.Endings != null)
+            stringBuilder.Append("Общая статистика:\n\n");
+
+            var save = savesHandler.GetSave(peerId);
+            foreach (var s in storiesHandler.GetAllStories())
             {
-                foreach (var x in save.Endings)
+                int completedChapters;
+                try
                 {
-                    var endingsCount = storiesHandler.GetStoryChapter(x.StoryId, x.ChapterId).Endings.Length;
-                    stringBuilder.Append($"- {storiesHandler.GetStoryName(x.StoryId)}, Глава {x.ChapterId + 1}: {x.Obtained.Length}/{endingsCount}\n");
+                    completedChapters = Array.Find(save.StoriesStats, x => x.StoryId == s.Id).Chapters.Length;
                 }
-            }
-            else
-            {
-                stringBuilder.Append("Нет данных\n");
+                catch (NullReferenceException)
+                {
+                    completedChapters = 0;
+                }
+                stringBuilder.Append($"- {s.Name}: {completedChapters}/{storiesHandler.GetAllStoryChapters(s.Id).Count}\n");
             }
 
-            stringBuilder.Append("\nПолученные достижения:\n");
-            if (save.Achievements != null)
+            vkApi.Messages.Send(new MessagesSendParams
             {
-                foreach (var x in save.Achievements)
+                RandomId = new DateTime().Millisecond,
+                PeerId = peerId,
+                Message = stringBuilder.ToString()
+            });
+        }
+
+        private void SendStats(long peerId, int storyId)
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append($"Статистика по \"{storiesHandler.GetStoryName(storyId)}\":\n");
+
+            SaveChapterStats[] chapters;
+            try
+            {
+                chapters = Array.Find(savesHandler.GetSave(peerId).StoriesStats, x => x.StoryId == storyId).Chapters;
+                for (int i = 0; i < chapters.Length; i++)
                 {
-                    var achievementsCount = storiesHandler.GetStoryChapter(x.StoryId, x.ChapterId).Achievements.Length;
-                    stringBuilder.Append($"- {storiesHandler.GetStoryName(x.StoryId)}, Глава {x.ChapterId + 1}: {x.Obtained.Length}/{achievementsCount}\n");
+                    var chapter = storiesHandler.GetStoryChapter(storyId, i);
+                    stringBuilder.Append($"- {i + 1}: {chapters[i].ObtainedEndings}/{chapter.Endings.Length}, {chapters[i].ObtainedAchievements}/{chapter.Achievements.Length}\n");
                 }
             }
-            else
+            catch (NullReferenceException)
             {
-                stringBuilder.Append("Нет данных\n");
+                stringBuilder.Append("- Нет данных.");
+            }
+
+            vkApi.Messages.Send(new MessagesSendParams
+            {
+                RandomId = new DateTime().Millisecond,
+                PeerId = peerId,
+                Message = stringBuilder.ToString()
+            });
+        }
+
+        private void SendStats(long peerId, int storyId, int chapterId)
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append($"Статистика по главе {chapterId + 1} истории \"{storiesHandler.GetStoryName(storyId)}\":\n\n");
+           
+            try
+            {
+                var chapterSave = Array.Find(savesHandler.GetSave(peerId).StoriesStats, x => x.StoryId == storyId).Chapters[chapterId];
+                var chapterData = storiesHandler.GetStoryChapter(storyId, chapterId);
+
+                stringBuilder.Append($"Полученные концовки ({chapterSave.ObtainedEndings.Length}/{chapterData.Endings.Length}):");
+                for (int i = 0; i < chapterData.Endings.Length; i++)
+                {
+                    if (chapterSave.ObtainedEndings.Contains(i))
+                    {
+                        string type;
+                        if (chapterData.Endings[i].Type == 0)
+                            type = "ОСН";
+                        else
+                            type = "АЛЬТ";
+                        stringBuilder.Append($"- [{type}] {chapterData.Endings[i].Name}\n");
+                    }
+                }
+
+                stringBuilder.Append($"\nПолученные достижения ({chapterSave.ObtainedAchievements.Length}/{chapterData.Achievements.Length}):");
+                for (int i = 0; i < chapterData.Endings.Length; i++)
+                {
+                    if (chapterSave.ObtainedAchievements.Contains(i))
+                    {
+                        stringBuilder.Append($"- {chapterData.Endings[i].Name}\n");
+                    }
+                }
+            }
+            catch (NullReferenceException)
+            {
+                stringBuilder.Append("- Нет данных.");
             }
 
             vkApi.Messages.Send(new MessagesSendParams
@@ -260,26 +316,19 @@ namespace StoryBot.Logic
         /// <param name="peerId"></param>
         private void SendStoryChoiceDialog(long peerId)
         {
-            List<StoryDocument> stories = storiesHandler.GetAllStories();
-
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.Append("Выберите историю:\n");
 
-            SortedDictionary<int, StoryDocument> sorted = new SortedDictionary<int, StoryDocument>();
-            foreach (StoryDocument story in stories)
-            {
-                sorted.Add(story.Id, story);
-            }
-
             KeyboardBuilder keyboardBuilder = new KeyboardBuilder(true);
-            foreach (KeyValuePair<int, StoryDocument> entry in sorted)
+            var storiesList = storiesHandler.GetAllStories();
+            for (int i = 0; i < storiesList.Count; i++)
             {
-                stringBuilder.Append($"[ {entry.Key + 1} ] {entry.Value.Name}\n");
+                stringBuilder.Append($"[ {i + 1} ] {storiesList[i].Name}\n");
                 keyboardBuilder.AddButton(
-                    $"[ {entry.Key + 1} ]",
+                    $"[ {i + 1} ]",
                     System.Web.HttpUtility.JavaScriptStringEncode(JsonConvert.SerializeObject(new SaveProgress
                     {
-                        Story = entry.Value.Id
+                        Story = i
                     })),
                     KeyboardButtonColor.Primary);
             }
@@ -302,28 +351,18 @@ namespace StoryBot.Logic
         /// <param name="storyId"></param>
         private void SendChapterChoiceDialog(long peerId, int storyId)
         {
-            List<StoryDocument> stories = storiesHandler.GetAllStories();
-
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.Append("Выберите главу:\n");
-
-            SortedDictionary<int, StoryDocument> sorted = new SortedDictionary<int, StoryDocument>();
-            foreach (StoryDocument story in stories)
-            {
-                sorted.Add(story.Chapter, story);
-            }
-
+            StringBuilder stringBuilder = new StringBuilder("Выберите главу:\n");
             KeyboardBuilder keyboardBuilder = new KeyboardBuilder(true);
-            foreach (KeyValuePair<int, StoryDocument> entry in sorted)
+            foreach (var story in storiesHandler.GetAllStoryChapters(storyId))
             {
-                stringBuilder.Append($"Глава {entry.Key + 1}. {entry.Value.ChapterName}\n");
+                stringBuilder.Append($"Глава {story.Chapter + 1}\n");
                 keyboardBuilder.AddButton(
-                    $"[ {entry.Key + 1} ]",
+                    $"[ {story.Chapter + 1} ]",
                     System.Web.HttpUtility.JavaScriptStringEncode(JsonConvert.SerializeObject(new SaveProgress
                     {
                         Story = storyId,
-                        Chapter = entry.Value.Chapter,
-                        Storyline = entry.Value.Beginning,
+                        Chapter = story.Chapter,
+                        Storyline = story.Beginning,
                         Position = 0
                     })),
                     KeyboardButtonColor.Primary);
@@ -391,6 +430,48 @@ namespace StoryBot.Logic
                     PeerId = peerId,
                     Message = "Выберите вариант из представленных"
                 });
+            }
+        }
+
+        /// <summary>
+        /// Handles command with arguments
+        /// </summary>
+        /// <param name="peerId"></param>
+        /// <param name="command"></param>
+        /// <param name="args"></param>
+        private void HandleCommand(long peerId, string command, string[] args = null)
+        {
+            switch (command)
+            {
+                case "helloworld":
+                    SendHelloWorld(peerId);
+                    break;
+                case "repeat":
+                    SendContent(peerId, savesHandler.GetSave(peerId).Current);
+                    break;
+                case "reset":
+                    SendStoryChoiceDialog(peerId);
+                    break;
+                case "stats":
+                    switch (args.Length)
+                    {
+                        case 0:
+                            SendStats(peerId);
+                            break;
+                            case 1:
+                            SendStats(peerId, int.Parse(args[0]) - 1);
+                            break;
+                        case 2:
+                            SendStats(peerId, int.Parse(args[0]) - 1, int.Parse(args[1]) - 1);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    // TODO: Send "unknown command"
+                    logger.Warn("Unknown command");
+                    break;
             }
         }
 

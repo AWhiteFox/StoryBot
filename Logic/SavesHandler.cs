@@ -36,7 +36,7 @@ namespace StoryBot.Logic
                 if (results.CountDocuments() == 0)
                 {
                     logger.Info($"Save for {id} not found. Creating one...");
-                    collection.InsertOne(new SaveDocument { Id = id });
+                    collection.InsertOne(new SaveDocument(id));
                     return GetSave(id);
                 }
                 else throw;
@@ -66,38 +66,14 @@ namespace StoryBot.Logic
         public void SaveObtainedEnding(long id, int storyId, int chapterId, int ending)
         {
             SaveDocument save = GetSave(id);
-            try
-            {
-                int questIndex = Array.FindIndex(save.Endings, x => x.StoryId == storyId);
+            int storyIndex = Array.FindIndex(save.StoriesStats, x => x.StoryId == storyId);
 
-                List<int> list = save.Endings[questIndex].Obtained.ToList();
-                if (!list.Contains(ending)) list.Add(ending);
-                list.Sort();
-                save.Endings[questIndex].Obtained = list.ToArray();
+            List<int> list = save.StoriesStats[storyIndex].Chapters[chapterId].ObtainedEndings.ToList();
+            if (!list.Contains(ending)) list.Add(ending);
+            list.Sort();
+            save.StoriesStats[storyIndex].Chapters[chapterId].ObtainedEndings = list.ToArray();
 
-                UpdateSave(id, save);
-            }
-            catch (Exception exception)
-            {
-                if (exception is ArgumentNullException || exception is IndexOutOfRangeException)
-                {
-                    if (save.Endings == null)
-                    {
-                        save.Endings = new SaveEndings[0];
-                    }
-                    List<SaveEndings> list = save.Endings.ToList();
-                    list.Add(new SaveEndings { StoryId = storyId, ChapterId = chapterId, Obtained = new int[0] });
-                    save.Endings = list.OrderBy(x => x.StoryId).ToArray();
-
-                    UpdateSave(id, save);
-
-                    SaveObtainedEnding(id, storyId, chapterId, ending);
-                }
-                else
-                {
-                    throw;
-                }
-            }
+            UpdateSave(id, save);
         }
 
         /// <summary>
@@ -109,38 +85,14 @@ namespace StoryBot.Logic
         public void SaveObtainedAchievement(long id, int storyId, int chapterId, int achievement)
         {
             SaveDocument save = GetSave(id);
-            try
-            {
-                int questIndex = Array.FindIndex(save.Achievements, x => x.StoryId == storyId);
+            int storyIndex = Array.FindIndex(save.StoriesStats, x => x.StoryId == storyId);
 
-                List<int> list = save.Achievements[questIndex].Obtained.ToList();
-                if (!list.Contains(achievement)) list.Add(achievement);
-                list.Sort();
-                save.Achievements[questIndex].Obtained = list.ToArray();
+            List<int> list = save.StoriesStats[storyIndex].Chapters[chapterId].ObtainedAchievements.ToList();
+            if (!list.Contains(achievement)) list.Add(achievement);
+            list.Sort();
+            save.StoriesStats[storyIndex].Chapters[chapterId].ObtainedAchievements = list.ToArray();
 
-                UpdateSave(id, save);
-            }
-            catch (Exception exception)
-            {
-                if (exception is ArgumentNullException || exception is IndexOutOfRangeException)
-                {
-                    if (save.Achievements == null)
-                    {
-                        save.Achievements = new SaveAchievements[0];
-                    }
-                    List<SaveAchievements> list = save.Achievements.ToList();
-                    list.Add(new SaveAchievements { StoryId = storyId, ChapterId = chapterId, Obtained = new int[0] });
-                    save.Achievements = list.OrderBy(x => x.StoryId).ToArray();
-
-                    UpdateSave(id, save);
-
-                    SaveObtainedAchievement(id, storyId, chapterId, achievement);
-                }
-                else
-                {
-                    throw;
-                }
-            } 
+            UpdateSave(id, save);
         }
 
         // Update //

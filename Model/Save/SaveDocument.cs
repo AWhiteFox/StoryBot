@@ -1,5 +1,6 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using System;
 
 namespace StoryBot.Model
 {
@@ -7,17 +8,21 @@ namespace StoryBot.Model
     {
         [BsonId]
         public ObjectId ObjectId { get; set; }
-        
+
         [BsonElement("id")]
         public long Id { get; set; }
 
         [BsonElement("current")]
         public SaveProgress Current { get; set; }
 
-        [BsonElement("endings")]
-        public SaveEndings[] Endings { get; set; }
+        [BsonElement("stats")]
+        public SaveStoryStats[] StoriesStats { get; set; }
 
-        [BsonElement("achievements")]
-        public SaveAchievements[] Achievements { get; set; }
+        public SaveDocument(long Id, SaveProgress Current = null, SaveStoryStats[] StoriesStats = null)
+        {
+            this.Id = Id;
+            this.Current = Current;
+            this.StoriesStats = StoriesStats ?? Array.Empty<SaveStoryStats>();
+        }
     }
 }

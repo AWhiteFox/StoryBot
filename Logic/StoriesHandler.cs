@@ -13,6 +13,11 @@ namespace StoryBot.Logic
             collection = _collection;
         }
 
+        public List<StoryDocument> GetAllStories()
+        {
+            return collection.Find(Builders<StoryDocument>.Filter.Eq("chapter", 0)).SortBy(x => x.Id).ToList();
+        }
+
         public StoryDocument GetStoryChapter(int id, int chapter)
         {
             var filter = Builders<StoryDocument>.Filter;
@@ -24,14 +29,9 @@ namespace StoryBot.Logic
             return GetStoryChapter(id, 0).Name;
         }
 
-        public List<StoryDocument> GetAllStories()
-        {
-            return collection.Find(Builders<StoryDocument>.Filter.Eq("chapter", 0)).ToList();
-        }
-
         public List<StoryDocument> GetAllStoryChapters(int storyId)
         {
-            return collection.Find(Builders<StoryDocument>.Filter.Eq("id", storyId)).ToList();
+            return collection.Find(Builders<StoryDocument>.Filter.Eq("id", storyId)).SortBy(x => x.Chapter).ToList();
         }
     }
 }

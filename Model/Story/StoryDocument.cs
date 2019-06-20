@@ -17,9 +17,6 @@ namespace StoryBot.Model
         [BsonElement("name")]
         public string Name { get; set; }
 
-        [BsonElement("chapter_name")]
-        public string ChapterName { get; set; }
-
         [BsonElement("storylines")]
         public Storyline[] Storylines { get; set; }
 
