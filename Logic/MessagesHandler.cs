@@ -126,6 +126,7 @@ namespace StoryBot.Logic
                     stringBuilder.Append($"Вы заработали достижение {achievement.Name}!\n - {achievement.Description}\n\n");
                     save.AddAchievement(story.Id, story.Chapter, (int)progress.Achievement);
                 }
+                save.Update();
                 foreach (string x in storylineElement.Content)
                 {
                     stringBuilder.Append(x + "\n");
@@ -162,6 +163,7 @@ namespace StoryBot.Logic
             else
             {
                 save.AddEnding(story.Id, story.Chapter, (int)progress.Achievement);
+                save.Update();
 
                 StoryEnding ending = story.Endings[progress.Position];
 
@@ -337,6 +339,10 @@ namespace StoryBot.Logic
                     KeyboardButtonColor.Primary);
             }
 
+            var save = savesHandler.GetSave(peerId);
+            save.Current = new SaveProgress();
+            save.Update();
+
             vkApi.Messages.Send(new MessagesSendParams
             {
                 RandomId = new DateTime().Millisecond,
@@ -419,6 +425,9 @@ namespace StoryBot.Logic
                 }
                 else
                 {
+                    var save = savesHandler.GetSave(peerId);
+                    save.Current.Story = number;
+                    save.Update();
                     SendChapterChoiceDialog(peerId, number);
                     return;
                 }

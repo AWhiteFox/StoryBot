@@ -12,8 +12,6 @@ namespace StoryBot.Model
 
         public static IMongoCollection<SaveDocument> collection;
 
-        #region Bson Properties
-
         [BsonId]
         public ObjectId ObjectId { get; set; }
 
@@ -26,10 +24,6 @@ namespace StoryBot.Model
         [BsonElement("stats")]
         public SaveStoryStats[] StoriesStats { get; set; }
 
-        #endregion
-
-        #region Constructor and Destructor
-
         public SaveDocument(long Id, SaveProgress Current = null, SaveStoryStats[] StoriesStats = null)
         {
             this.Id = Id;
@@ -37,7 +31,8 @@ namespace StoryBot.Model
             this.StoriesStats = StoriesStats ?? Array.Empty<SaveStoryStats>();
         }
 
-        ~SaveDocument()
+        // TODO: Move it back to SavesHandler
+        public void Update()
         {
             try
             {
@@ -48,8 +43,6 @@ namespace StoryBot.Model
                 throw new NullReferenceException("SaveDocument collection doesn't set");
             }
         }
-
-        #endregion
 
         public void AddEnding(int storyId, int chapterId, int endingId)
         {
