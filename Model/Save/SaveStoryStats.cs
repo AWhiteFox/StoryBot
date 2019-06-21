@@ -1,4 +1,5 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
+using System;
 
 namespace StoryBot.Model
 {
@@ -10,10 +11,10 @@ namespace StoryBot.Model
         [BsonElement("chapters")]
         public SaveChapterStats[] Chapters { get; set; }
 
-        public SaveStoryStats(int StoryId, SaveChapterStats[] Chapters)
+        public SaveStoryStats(int StoryId, SaveChapterStats[] Chapters = null)
         {
             this.StoryId = StoryId;
-            this.Chapters = Chapters;
+            this.Chapters = Chapters ?? Array.Empty<SaveChapterStats>();
         }
     }
 }

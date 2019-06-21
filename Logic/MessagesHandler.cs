@@ -111,11 +111,11 @@ namespace StoryBot.Logic
             if (story == null)
             {
                 story = storiesHandler.GetStoryChapter((int)progress.Story, (int)progress.Chapter);
-            }  
-
+            }
+            SaveDocument save = savesHandler.GetSave(peerId);
             if (progress.Storyline != "Ending")
             {
-                savesHandler.SaveProgress(peerId, progress);
+                save.Current = progress;
 
                 StorylineElement storylineElement = Array.Find(story.Storylines, x => x.Tag == progress.Storyline).Elements[progress.Position];
 
@@ -124,7 +124,7 @@ namespace StoryBot.Logic
                 {
                     var achievement = story.Achievements[(int)progress.Achievement];
                     stringBuilder.Append($"Вы заработали достижение {achievement.Name}!\n - {achievement.Description}\n\n");
-                    savesHandler.SaveObtainedAchievement(peerId, story.Id, story.Chapter, (int)progress.Achievement);
+                    save.AddAchievement(story.Id, story.Chapter, (int)progress.Achievement);
                 }
                 foreach (string x in storylineElement.Content)
                 {
@@ -161,49 +161,42 @@ namespace StoryBot.Logic
             }
             else
             {
-                savesHandler.SaveObtainedEnding(peerId, story.Id, story.Chapter, progress.Position);
-                SendEnding(peerId, story.Endings[progress.Position], story.Endings.Length - 1);
+                save.AddEnding(story.Id, story.Chapter, (int)progress.Achievement);
+
+                StoryEnding ending = story.Endings[progress.Position];
+
+                StringBuilder stringBuilder = new StringBuilder();
+                foreach (string x in ending.Content)
+                {
+                    stringBuilder.Append(x + "\n");
+                }
+
+                int alternativeEndingsCount = story.Endings.Length - 1;
+                if (ending.Type == 0)
+                {
+                    stringBuilder.Append($"\nПоздравляем, вы получили каноничную концовку \"{ending.Name}\"!\n\n");
+                    stringBuilder.Append($"Эта история содержит еще {alternativeEndingsCount} альтернативные концовки.");
+                }
+                else
+                {
+                    stringBuilder.Append($"\nПоздравляем, вы получили альтернативную концовку \"{ending.Name}\"!\n\n");
+                    stringBuilder.Append($"Эта история содержит еще {alternativeEndingsCount - 1} альтернативные концовки и одну каноничную.");
+                }
+
+                stringBuilder.Append("\nТеперь вы можете пройти её еще раз или выбрать другую");
+
+                vkApi.Messages.Send(new MessagesSendParams
+                {
+                    RandomId = new DateTime().Millisecond,
+                    PeerId = peerId,
+                    Message = stringBuilder.ToString()
+                });
+                SendStoryChoiceDialog(peerId);
             }
         }
 
         /// <summary>
-        /// Sends an ending message
-        /// </summary>
-        /// <param name="peerId"></param>
-        /// <param name="ending"></param>
-        /// <param name="alternativeEndingsCount"></param>
-        private void SendEnding(long peerId, StoryEnding ending, int alternativeEndingsCount)
-        {
-            StringBuilder stringBuilder = new StringBuilder();
-            foreach (string x in ending.Content)
-            {
-                stringBuilder.Append(x + "\n");
-            }
-
-            if (ending.Type == 0)
-            {
-                stringBuilder.Append($"\nПоздравляем, вы получили каноничную концовку \"{ending.Name}\"!\n\n");
-                stringBuilder.Append($"Эта история содержит еще {alternativeEndingsCount} альтернативные концовки.");
-            }
-            else
-            {
-                stringBuilder.Append($"\nПоздравляем, вы получили альтернативную концовку \"{ending.Name}\"!\n\n");
-                stringBuilder.Append($"Эта история содержит еще {alternativeEndingsCount - 1} альтернативные концовки и одну каноничную.");
-            }
-
-            stringBuilder.Append("\nТеперь вы можете пройти её еще раз или выбрать другую");
-
-            vkApi.Messages.Send(new MessagesSendParams
-            {
-                RandomId = new DateTime().Millisecond,
-                PeerId = peerId,
-                Message = stringBuilder.ToString()
-            });
-            SendStoryChoiceDialog(peerId);
-        }
-
-        /// <summary>
-        /// Sends story choice for stats dialog
+        /// Sends short stats
         /// </summary>
         /// <param name="peerId"></param>
         private void SendStats(long peerId)
@@ -234,6 +227,11 @@ namespace StoryBot.Logic
             });
         }
 
+        /// <summary>
+        /// Sends story stats
+        /// </summary>
+        /// <param name="peerId"></param>
+        /// <param name="storyId"></param>
         private void SendStats(long peerId, int storyId)
         {
             StringBuilder stringBuilder = new StringBuilder();
@@ -251,7 +249,7 @@ namespace StoryBot.Logic
             }
             catch (NullReferenceException)
             {
-                stringBuilder.Append("- Нет данных.");
+                stringBuilder.Append("\n- Нет данных.");
             }
 
             vkApi.Messages.Send(new MessagesSendParams
@@ -262,6 +260,12 @@ namespace StoryBot.Logic
             });
         }
 
+        /// <summary>
+        /// Send chapter stats
+        /// </summary>
+        /// <param name="peerId"></param>
+        /// <param name="storyId"></param>
+        /// <param name="chapterId"></param>
         private void SendStats(long peerId, int storyId, int chapterId)
         {
             StringBuilder stringBuilder = new StringBuilder();
@@ -332,8 +336,6 @@ namespace StoryBot.Logic
                     })),
                     KeyboardButtonColor.Primary);
             }
-
-            savesHandler.SaveProgress(peerId, new SaveProgress());
 
             vkApi.Messages.Send(new MessagesSendParams
             {
