@@ -1,6 +1,7 @@
 ﻿using MongoDB.Driver;
 using StoryBot.Model;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace StoryBot.Logic
 {
@@ -18,6 +19,11 @@ namespace StoryBot.Logic
             return collection.Find(Builders<StoryDocument>.Filter.Eq("chapter", 0)).SortBy(x => x.Id).ToList();
         }
 
+        public List<StoryDocument> GetAllStoryChapters(int storyId)
+        {
+            return collection.Find(Builders<StoryDocument>.Filter.Eq("id", storyId)).SortBy(x => x.Chapter).SortBy(x => x.Chapter).ToList();
+        }
+
         public StoryDocument GetStoryChapter(int id, int chapter)
         {
             var filter = Builders<StoryDocument>.Filter;
@@ -27,11 +33,6 @@ namespace StoryBot.Logic
         public string GetStoryName(int id)
         {
             return GetStoryChapter(id, 0).Name;
-        }
-
-        public List<StoryDocument> GetAllStoryChapters(int storyId)
-        {
-            return collection.Find(Builders<StoryDocument>.Filter.Eq("id", storyId)).SortBy(x => x.Chapter).ToList();
         }
     }
 }

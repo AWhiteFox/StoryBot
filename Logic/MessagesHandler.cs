@@ -18,6 +18,8 @@ namespace StoryBot.Logic
     {
         private static readonly NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
+        private static readonly char prefix = '.'; 
+
         private readonly IVkApi vkApi;
 
         private readonly StoriesHandler storiesHandler;
@@ -45,14 +47,14 @@ namespace StoryBot.Logic
                 // Make sure it is the last message
                 if (vkApi.Messages.GetHistory(new MessagesGetHistoryParams { Count = 1, PeerId = peerId }).Messages.ToCollection()[0].Date <= content.Date)
                 {
-                    if (content.Text[0] == '!')
+                    if (content.Text[0] == prefix)
                     {
                         string[] command = content.Text.Remove(0, 1).ToLower().Split(" ");
                         HandleCommand(peerId, command[0], command.Skip(1).ToArray());
                     }
                     else if (content.Payload != null)
                     {
-                        if (content.Payload[0] == '!')
+                        if (content.Payload[0] == prefix)
                         {
                             string[] command = content.Payload.Remove(0, 1).ToLower().Split(" ");
                             HandleCommand(peerId, command[0], command.Skip(1).ToArray());
@@ -64,7 +66,7 @@ namespace StoryBot.Logic
                     }
                     else if (int.TryParse(content.Text, out int number))
                     {
-                        HandleNumber(peerId, number - 1);
+                        HandleNumber(peerId, number);
                     }
                 }
                 else
@@ -160,32 +162,40 @@ namespace StoryBot.Logic
                     Keyboard = keyboardBuilder.Build()
                 });
             }
-            else
+            else // Ending
             {
                 save.AddEnding(story.Id, story.Chapter, (int)progress.Achievement);
                 save.Update();
 
-                StoryEnding ending = story.Endings[progress.Position];
-
                 StringBuilder stringBuilder = new StringBuilder();
-                foreach (string x in ending.Content)
-                {
-                    stringBuilder.Append(x + "\n");
-                }
 
-                int alternativeEndingsCount = story.Endings.Length - 1;
-                if (ending.Type == 0)
+                if (story.Chapter != 0)
                 {
-                    stringBuilder.Append($"\nПоздравляем, вы получили каноничную концовку \"{ending.Name}\"!\n\n");
-                    stringBuilder.Append($"Эта история содержит еще {alternativeEndingsCount} альтернативные концовки.");
+                    StoryEnding ending = story.Endings[progress.Position];
+
+                    foreach (string x in ending.Content)
+                    {
+                        stringBuilder.Append(x + "\n");
+                    }
+
+                    int alternativeEndingsCount = story.Endings.Length - 1;
+                    if (ending.Type == 0)
+                    {
+                        stringBuilder.Append($"\nПоздравляем, вы получили каноничную концовку \"{ending.Name}\"!\n\n");
+                        stringBuilder.Append($"Эта глава содержит еще {alternativeEndingsCount} альтернативные концовки.");
+                    }
+                    else
+                    {
+                        stringBuilder.Append($"\nПоздравляем, вы получили альтернативную концовку \"{ending.Name}\"!\n\n");
+                        stringBuilder.Append($"Эта глава содержит еще {alternativeEndingsCount - 1} альтернативные концовки и одну каноничную.");
+                    }
+
+                    stringBuilder.Append("\nТеперь вы можете пройти эту главу еще раз или выбрать другую");
                 }
                 else
                 {
-                    stringBuilder.Append($"\nПоздравляем, вы получили альтернативную концовку \"{ending.Name}\"!\n\n");
-                    stringBuilder.Append($"Эта история содержит еще {alternativeEndingsCount - 1} альтернативные концовки и одну каноничную.");
+                    stringBuilder.Append("\n Поздравляем, вы завершили пролог!\nТеперь вы можете пройти его еще раз или выбрать другую главу.");
                 }
-
-                stringBuilder.Append("\nТеперь вы можете пройти её еще раз или выбрать другую");
 
                 vkApi.Messages.Send(new MessagesSendParams
                 {
@@ -193,7 +203,7 @@ namespace StoryBot.Logic
                     PeerId = peerId,
                     Message = stringBuilder.ToString()
                 });
-                SendStoryChoiceDialog(peerId);
+                SendChapterChoiceDialog(peerId, story.Id);
             }
         }
 
@@ -359,18 +369,38 @@ namespace StoryBot.Logic
         /// <param name="storyId"></param>
         private void SendChapterChoiceDialog(long peerId, int storyId)
         {
-            StringBuilder stringBuilder = new StringBuilder("Выберите главу:\n");
+            StringBuilder stringBuilder = new StringBuilder();
             KeyboardBuilder keyboardBuilder = new KeyboardBuilder(true);
-            foreach (var story in storiesHandler.GetAllStoryChapters(storyId))
+
+            var chaptersList = storiesHandler.GetAllStoryChapters(storyId);
+
+            stringBuilder.Append($"Выберите главу истории {chaptersList[0].Name} или используйте команду {prefix}reset для выбора другой истории:\n");
+
+            // For prologue
+            stringBuilder.Append($"Глава 0. Пролог\n");
+            keyboardBuilder.AddButton(
+                $"[ Пролог ]",
+                System.Web.HttpUtility.JavaScriptStringEncode(JsonConvert.SerializeObject(new SaveProgress
+                {
+                    Story = storyId,
+                    Chapter = 0,
+                    Storyline = chaptersList[0].Beginning,
+                    Position = 0
+                })),
+                KeyboardButtonColor.Primary);
+            
+            // For other chapters
+            for (int i = 1; i < chaptersList.Count; i++)
             {
-                stringBuilder.Append($"Глава {story.Chapter + 1}\n");
+                var chapter = chaptersList[i];
+                stringBuilder.Append($"Глава {i}. {chapter.Name}\n");
                 keyboardBuilder.AddButton(
-                    $"[ {story.Chapter + 1} ]",
+                    $"[ {i} ]",
                     System.Web.HttpUtility.JavaScriptStringEncode(JsonConvert.SerializeObject(new SaveProgress
                     {
                         Story = storyId,
-                        Chapter = story.Chapter,
-                        Storyline = story.Beginning,
+                        Chapter = i,
+                        Storyline = chapter.Beginning,
                         Position = 0
                     })),
                     KeyboardButtonColor.Primary);
@@ -408,7 +438,7 @@ namespace StoryBot.Logic
                         StoryOption storyOption = Array
                             .Find(story.Storylines, x => x.Tag == (progress.Storyline ?? story.Beginning))
                             .Elements[progress.Position]
-                            .Options[number];
+                            .Options[number - 1];
 
                         progress.Storyline = storyOption.Storyline ?? progress.Storyline;
                         progress.Position = storyOption.Position;
@@ -426,6 +456,7 @@ namespace StoryBot.Logic
                 else
                 {
                     var save = savesHandler.GetSave(peerId);
+                    number--;
                     save.Current.Story = number;
                     save.Update();
                     SendChapterChoiceDialog(peerId, number);
