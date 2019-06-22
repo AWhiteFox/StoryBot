@@ -486,7 +486,19 @@ namespace StoryBot.Logic
                     SendHelloWorld(peerId);
                     break;
                 case "repeat":
-                    SendContent(peerId, savesHandler.Get(peerId).Current);
+                    var progress = savesHandler.Get(peerId).Current;
+                    if (progress.Story == null)
+                    {
+                        SendStoryChoiceDialog(peerId);
+                    }
+                    else if (progress.Chapter == null)
+                    {
+                        SendChapterChoiceDialog(peerId, (int)progress.Story);
+                    }
+                    else
+                    {
+                        SendContent(peerId, progress);
+                    }
                     break;
                 case "reset":
                     SendStoryChoiceDialog(peerId);
@@ -508,8 +520,12 @@ namespace StoryBot.Logic
                     }
                     break;
                 default:
-                    // TODO: Send "unknown command"
-                    logger.Warn("Unknown command");
+                    vkApi.Messages.Send(new MessagesSendParams
+                    {
+                        RandomId = new DateTime().Millisecond,
+                        PeerId = peerId,
+                        Message = $"Неизвестная команда, используйте {}"
+                    });
                     break;
             }
         }

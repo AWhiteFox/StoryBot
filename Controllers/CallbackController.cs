@@ -2,7 +2,6 @@
 using StoryBot.Logic;
 using StoryBot.Model;
 using System;
-using VkNet.Abstractions;
 
 namespace StoryBot.Controllers
 {
@@ -16,11 +15,9 @@ namespace StoryBot.Controllers
 
         private readonly MessagesHandler messagesHandler;
 
-        public CallbackController(IVkApi vkApi, MongoDB.Driver.IMongoDatabase database)
+        public CallbackController(MessagesHandler messagesHandler)
         {
-            messagesHandler = new MessagesHandler(vkApi,
-                new StoriesHandler(database.GetCollection<StoryDocument>("stories")),
-                new SavesHandler(database.GetCollection<SaveDocument>("saves")));
+            this.messagesHandler = messagesHandler;
         }
 
         [HttpPost]
