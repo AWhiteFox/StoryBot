@@ -160,12 +160,12 @@ namespace StoryBot.Logic
             }
             else // Ending
             {
-                save.AddEnding(story.Id, story.Chapter, (int)progress.Achievement);
+                save.AddEnding(story.Id, story.Chapter, progress.Position);
                 database.UpdateSave(save);
 
                 StringBuilder stringBuilder = new StringBuilder();
 
-                if (story.Chapter != 0)
+                if (story.Chapter != 0) // Prologue check
                 {
                     StoryEnding ending = story.Endings[progress.Position];
 
