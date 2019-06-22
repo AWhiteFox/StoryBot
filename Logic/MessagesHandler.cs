@@ -21,15 +21,12 @@ namespace StoryBot.Logic
 
         private readonly IVkApi vkApi;
 
-        private readonly StoriesHandler storiesHandler;
+        private readonly DatabaseHandler database;
 
-        private readonly SavesHandler savesHandler;
-
-        public MessagesHandler(IVkApi _vkApi, StoriesHandler _storiesHandler, SavesHandler _savesHandler)
+        public MessagesHandler(IVkApi vkApi, DatabaseHandler database)
         {
-            vkApi = _vkApi;
-            storiesHandler = _storiesHandler;
-            savesHandler = _savesHandler;
+            this.vkApi = vkApi;
+            this.database = database;
         }
 
         /// <summary>
@@ -111,9 +108,9 @@ namespace StoryBot.Logic
         {
             if (story == null)
             {
-                story = storiesHandler.GetStoryChapter((int)progress.Story, (int)progress.Chapter);
+                story = database.GetChapter((int)progress.Story, (int)progress.Chapter);
             }
-            SaveDocument save = savesHandler.Get(peerId);
+            SaveDocument save = database.GetSave(peerId);
             if (progress.Storyline != "Ending")
             {
                 save.Current = progress;
@@ -127,7 +124,7 @@ namespace StoryBot.Logic
                     stringBuilder.Append($"Вы заработали достижение {achievement.Name}!\n - {achievement.Description}\n\n");
                     save.AddAchievement(story.Id, story.Chapter, (int)progress.Achievement);
                 }
-                savesHandler.Update(save);
+                database.UpdateSave(save);
                 foreach (string x in storylineElement.Content)
                 {
                     stringBuilder.Append(x + "\n");
@@ -164,7 +161,7 @@ namespace StoryBot.Logic
             else // Ending
             {
                 save.AddEnding(story.Id, story.Chapter, (int)progress.Achievement);
-                savesHandler.Update(save);
+                database.UpdateSave(save);
 
                 StringBuilder stringBuilder = new StringBuilder();
 
@@ -213,8 +210,8 @@ namespace StoryBot.Logic
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.Append("Общая статистика:\n\n");
 
-            var save = savesHandler.Get(peerId);
-            foreach (var s in storiesHandler.GetAllPrologues())
+            var save = database.GetSave(peerId);
+            foreach (var s in database.GetAllPrologues())
             {
                 int completedChapters;
                 try
@@ -225,7 +222,7 @@ namespace StoryBot.Logic
                 {
                     completedChapters = 0;
                 }
-                stringBuilder.Append($"- {s.Name}: {completedChapters}/{storiesHandler.GetAllStoryChapters(s.Id).Count}\n");
+                stringBuilder.Append($"- {s.Name}: {completedChapters}/{database.GetAllChapters(s.Id).Count}\n");
             }
 
             vkApi.Messages.Send(new MessagesSendParams
@@ -244,15 +241,15 @@ namespace StoryBot.Logic
         private void SendStats(long peerId, int storyId)
         {
             StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.Append($"Статистика по \"{storiesHandler.GetPrologue(storyId).Name}\":\n");
+            stringBuilder.Append($"Статистика по \"{database.GetPrologue(storyId).Name}\":\n");
 
             SaveChapterStats[] chapters;
             try
             {
-                chapters = Array.Find(savesHandler.Get(peerId).StoriesStats, x => x.StoryId == storyId).Chapters;
+                chapters = Array.Find(database.GetSave(peerId).StoriesStats, x => x.StoryId == storyId).Chapters;
                 for (int i = 0; i < chapters.Length; i++)
                 {
-                    var chapter = storiesHandler.GetStoryChapter(storyId, i);
+                    var chapter = database.GetChapter(storyId, i);
                     stringBuilder.Append($"- {i + 1}: {chapters[i].ObtainedEndings}/{chapter.Endings.Length}, {chapters[i].ObtainedAchievements}/{chapter.Achievements.Length}\n");
                 }
             }
@@ -278,12 +275,12 @@ namespace StoryBot.Logic
         private void SendStats(long peerId, int storyId, int chapterId)
         {
             StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.Append($"Статистика по главе {chapterId + 1} истории \"{storiesHandler.GetPrologue(storyId).Name}\":\n\n");
+            stringBuilder.Append($"Статистика по главе {chapterId + 1} истории \"{database.GetPrologue(storyId).Name}\":\n\n");
            
             try
             {
-                var chapterSave = Array.Find(savesHandler.Get(peerId).StoriesStats, x => x.StoryId == storyId).Chapters[chapterId];
-                var chapterData = storiesHandler.GetStoryChapter(storyId, chapterId);
+                var chapterSave = Array.Find(database.GetSave(peerId).StoriesStats, x => x.StoryId == storyId).Chapters[chapterId];
+                var chapterData = database.GetChapter(storyId, chapterId);
 
                 stringBuilder.Append($"Полученные концовки ({chapterSave.ObtainedEndings.Length}/{chapterData.Endings.Length}):");
                 for (int i = 0; i < chapterData.Endings.Length; i++)
@@ -333,7 +330,7 @@ namespace StoryBot.Logic
             stringBuilder.Append("Выберите историю:\n");
 
             KeyboardBuilder keyboardBuilder = new KeyboardBuilder(true);
-            var storiesList = storiesHandler.GetAllPrologues();
+            var storiesList = database.GetAllPrologues();
             for (int i = 0; i < storiesList.Count; i++)
             {
                 stringBuilder.Append($"[ {i + 1} ] {storiesList[i].Name}\n");
@@ -346,9 +343,9 @@ namespace StoryBot.Logic
                     KeyboardButtonColor.Primary);
             }
 
-            var save = savesHandler.Get(peerId);
+            var save = database.GetSave(peerId);
             save.Current = new SaveProgress();
-            savesHandler.Update(save);
+            database.UpdateSave(save);
 
             vkApi.Messages.Send(new MessagesSendParams
             {
@@ -369,7 +366,7 @@ namespace StoryBot.Logic
             StringBuilder stringBuilder = new StringBuilder();
             KeyboardBuilder keyboardBuilder = new KeyboardBuilder(true);
 
-            var chaptersList = storiesHandler.GetAllStoryChapters(storyId);
+            var chaptersList = database.GetAllChapters(storyId);
 
             stringBuilder.Append($"Выберите главу истории {chaptersList[0].Name} или используйте команду {prefix}reset для выбора другой истории:\n");
 
@@ -423,14 +420,14 @@ namespace StoryBot.Logic
         {
             try
             {
-                SaveProgress progress = savesHandler.Get(peerId).Current;
+                SaveProgress progress = database.GetSave(peerId).Current;
 
                 StoryDocument story;
                 if (progress.Story != null)
                 {
                     if (progress.Chapter != null)
                     {
-                        story = storiesHandler.GetStoryChapter((int)progress.Story, (int)progress.Chapter);
+                        story = database.GetChapter((int)progress.Story, (int)progress.Chapter);
 
                         StoryOption storyOption = Array
                             .Find(story.Storylines, x => x.Tag == (progress.Storyline ?? story.Beginning))
@@ -443,7 +440,7 @@ namespace StoryBot.Logic
                     }
                     else
                     {
-                        story = storiesHandler.GetStoryChapter((int)progress.Story, number);
+                        story = database.GetChapter((int)progress.Story, number);
 
                         progress.Chapter = number;
                         progress.Storyline = story.Beginning;
@@ -452,10 +449,10 @@ namespace StoryBot.Logic
                 }
                 else
                 {
-                    var save = savesHandler.Get(peerId);
+                    var save = database.GetSave(peerId);
                     number--;
                     save.Current.Story = number;
-                    savesHandler.Update(save);
+                    database.UpdateSave(save);
                     SendChapterChoiceDialog(peerId, number);
                     return;
                 }
@@ -486,7 +483,7 @@ namespace StoryBot.Logic
                     SendHelloWorld(peerId);
                     break;
                 case "repeat":
-                    var progress = savesHandler.Get(peerId).Current;
+                    var progress = database.GetSave(peerId).Current;
                     if (progress.Story == null)
                     {
                         SendStoryChoiceDialog(peerId);

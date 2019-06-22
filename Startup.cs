@@ -31,9 +31,7 @@ namespace StoryBot
                 VkApi api = new VkApi();
                 api.Authorize(new ApiAuthParams { AccessToken = Environment.GetEnvironmentVariable("VK_ACCESSTOKEN") });
 
-                IMongoDatabase database = new MongoClient(Environment.GetEnvironmentVariable("MONGODB_URI")).GetDatabase("StoryBot");
-
-                return new MessagesHandler(api, new StoriesHandler(database.GetCollection<StoryDocument>("stories")), new SavesHandler(database.GetCollection<SaveDocument>("saves")));
+                return new MessagesHandler(api, new DatabaseHandler(new MongoClient(Environment.GetEnvironmentVariable("MONGODB_URI")).GetDatabase("StoryBot")));
             });
         }
 
