@@ -517,16 +517,20 @@ namespace StoryBot.Logic
                     }
                     break;
                 default:
+                    StringBuilder stringBuilder = new StringBuilder("Список команд:\n\n");
+                    stringBuilder.AppendLine(prefix + "reset - Сбрасывает текущую главу и открывает диалог выбора истории и главы");
+                    stringBuilder.AppendLine();
+                    stringBuilder.AppendLine(prefix + "repeat - Заново отправляет сообщений с диалогом выбора для текущей истории");
+                    stringBuilder.AppendLine();
+                    stringBuilder.AppendLine(prefix + "stats - Отправляет общую статистику по всем историям");
+                    stringBuilder.AppendLine(prefix + "stats <номер_истории> - Отправляет статистику по выбранной истории");
+                    stringBuilder.AppendLine(prefix + "stats <номер_истории> <номер_главы> - Отправляет статистику по выбранной главе");
+
                     vkApi.Messages.Send(new MessagesSendParams
                     {
                         RandomId = new DateTime().Millisecond,
                         PeerId = peerId,
-                        Message = vkApi.Board.GetComments(new BoardGetCommentsParams // TEMP: Make help message getting other way
-                        {
-                            GroupId = 181283373,
-                            TopicId = 40379670,
-                            Count = 1
-                        }).Items.Single().Text
+                        Message = stringBuilder.ToString()
                     });
                     break;
             }
