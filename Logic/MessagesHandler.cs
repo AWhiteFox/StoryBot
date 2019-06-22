@@ -175,18 +175,18 @@ namespace StoryBot.Logic
                     }
 
                     int alternativeEndingsCount = story.Endings.Length - 1;
-                    if (ending.Type == 0)
+                    if (progress.Position == 0) // Check if ending canonical
                     {
                         stringBuilder.Append($"\nПоздравляем, вы получили каноничную концовку \"{ending.Name}\"!\n\n");
                         stringBuilder.Append($"Эта глава содержит еще {alternativeEndingsCount} альтернативные концовки.");
                     }
-                    else
+                    else // Alternative
                     {
                         stringBuilder.Append($"\nПоздравляем, вы получили альтернативную концовку \"{ending.Name}\"!\n\n");
                         stringBuilder.Append($"Эта глава содержит еще {alternativeEndingsCount - 1} альтернативные концовки и одну каноничную.");
                     }
                 }
-                else
+                else // If it is a prologue
                 {
                     stringBuilder.Append("\nПоздравляем, вы завершили пролог!");
                 }
@@ -288,7 +288,7 @@ namespace StoryBot.Logic
                     if (chapterSave.ObtainedEndings.Contains(i))
                     {
                         string type;
-                        if (chapterData.Endings[i].Type == 0)
+                        if (i == 0)
                             type = "ОСН";
                         else
                             type = "АЛЬТ";
