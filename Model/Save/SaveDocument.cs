@@ -31,19 +31,6 @@ namespace StoryBot.Model
             this.StoriesStats = StoriesStats ?? Array.Empty<SaveStoryStats>();
         }
 
-        // TODO: Move it back to SavesHandler
-        public void Update()
-        {
-            try
-            {
-                collection.ReplaceOne(Builders<SaveDocument>.Filter.Eq("id", Id), this);
-            }
-            catch (NullReferenceException)
-            {
-                throw new NullReferenceException("SaveDocument collection doesn't set");
-            }
-        }
-
         public void AddEnding(int storyId, int chapterId, int endingId)
         {
             int statsId = Array.FindIndex(StoriesStats, x => x.StoryId == storyId);

@@ -15,5 +15,8 @@ namespace StoryBot.Model
 
         [JsonProperty("group_id")]
         public long GroupId { get; set; }
+
+        [JsonProperty("secret")]
+        public string Secret { get; set; }
     }
 }

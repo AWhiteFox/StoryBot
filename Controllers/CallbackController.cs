@@ -12,6 +12,8 @@ namespace StoryBot.Controllers
     {
         private static readonly NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
+        private static readonly string secret = Environment.GetEnvironmentVariable("VK_SECRET");
+
         private readonly MessagesHandler messagesHandler;
 
         public CallbackController(IVkApi vkApi, MongoDB.Driver.IMongoDatabase database)
@@ -24,25 +26,32 @@ namespace StoryBot.Controllers
         [HttpPost]
         public IActionResult Post([FromBody] CallbackUpdate update)
         {
-            try
+            if (update.Secret == secret)
             {
-                switch (update.Type)
+                try
                 {
-                    case "confirmation":
-                        return Ok(Environment.GetEnvironmentVariable("VK_CONFIGURATION"));
-                    case "message_new":
-                        messagesHandler.HandleNew(update.Object);
-                        return Ok("ok");
-                    default:
-                        return BadRequest("Unknown event");
+                    switch (update.Type)
+                    {
+                        case "confirmation":
+                            return Ok(Environment.GetEnvironmentVariable("VK_CONFIGURATION"));
+                        case "message_new":
+                            messagesHandler.HandleNew(update.Object);
+                            return Ok("ok");
+                        default:
+                            return BadRequest("Unknown event");
+                    }
+                }
+                catch (Exception exception)
+                {
+                    string str = "An error occurred while handling request";
+                    logger.Error(exception, str);
+                    return BadRequest(str);
                 }
             }
-            catch (Exception exception)
+            else
             {
-                string str = "An error occurred while handling request";
-                logger.Error(exception, str);
-                return BadRequest(str);
-            }            
+                return Forbid();
+            }
         }
     }
 }

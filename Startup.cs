@@ -32,11 +32,9 @@ namespace StoryBot
                 return api;
             });
 
-            var database = new MongoClient(Environment.GetEnvironmentVariable("MONGODB_URI")).GetDatabase("StoryBot");
-            Model.SaveDocument.collection = database.GetCollection<Model.SaveDocument>("saves");
             services.AddSingleton(sp =>
             {
-                return database;    
+                return new MongoClient(Environment.GetEnvironmentVariable("MONGODB_URI")).GetDatabase("StoryBot");
             });
         }
 

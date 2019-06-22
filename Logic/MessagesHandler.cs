@@ -2,7 +2,6 @@
 using Newtonsoft.Json.Linq;
 using StoryBot.Model;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using VkNet.Abstractions;
@@ -114,7 +113,7 @@ namespace StoryBot.Logic
             {
                 story = storiesHandler.GetStoryChapter((int)progress.Story, (int)progress.Chapter);
             }
-            SaveDocument save = savesHandler.GetSave(peerId);
+            SaveDocument save = savesHandler.Get(peerId);
             if (progress.Storyline != "Ending")
             {
                 save.Current = progress;
@@ -128,7 +127,7 @@ namespace StoryBot.Logic
                     stringBuilder.Append($"Вы заработали достижение {achievement.Name}!\n - {achievement.Description}\n\n");
                     save.AddAchievement(story.Id, story.Chapter, (int)progress.Achievement);
                 }
-                save.Update();
+                savesHandler.Update(save);
                 foreach (string x in storylineElement.Content)
                 {
                     stringBuilder.Append(x + "\n");
@@ -165,7 +164,7 @@ namespace StoryBot.Logic
             else // Ending
             {
                 save.AddEnding(story.Id, story.Chapter, (int)progress.Achievement);
-                save.Update();
+                savesHandler.Update(save);
 
                 StringBuilder stringBuilder = new StringBuilder();
 
@@ -189,12 +188,10 @@ namespace StoryBot.Logic
                         stringBuilder.Append($"\nПоздравляем, вы получили альтернативную концовку \"{ending.Name}\"!\n\n");
                         stringBuilder.Append($"Эта глава содержит еще {alternativeEndingsCount - 1} альтернативные концовки и одну каноничную.");
                     }
-
-                    stringBuilder.Append("\nТеперь вы можете пройти эту главу еще раз или выбрать другую");
                 }
                 else
                 {
-                    stringBuilder.Append("\n Поздравляем, вы завершили пролог!\nТеперь вы можете пройти его еще раз или выбрать другую главу.");
+                    stringBuilder.Append("\nПоздравляем, вы завершили пролог!");
                 }
 
                 vkApi.Messages.Send(new MessagesSendParams
@@ -216,7 +213,7 @@ namespace StoryBot.Logic
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.Append("Общая статистика:\n\n");
 
-            var save = savesHandler.GetSave(peerId);
+            var save = savesHandler.Get(peerId);
             foreach (var s in storiesHandler.GetAllStories())
             {
                 int completedChapters;
@@ -252,7 +249,7 @@ namespace StoryBot.Logic
             SaveChapterStats[] chapters;
             try
             {
-                chapters = Array.Find(savesHandler.GetSave(peerId).StoriesStats, x => x.StoryId == storyId).Chapters;
+                chapters = Array.Find(savesHandler.Get(peerId).StoriesStats, x => x.StoryId == storyId).Chapters;
                 for (int i = 0; i < chapters.Length; i++)
                 {
                     var chapter = storiesHandler.GetStoryChapter(storyId, i);
@@ -285,7 +282,7 @@ namespace StoryBot.Logic
            
             try
             {
-                var chapterSave = Array.Find(savesHandler.GetSave(peerId).StoriesStats, x => x.StoryId == storyId).Chapters[chapterId];
+                var chapterSave = Array.Find(savesHandler.Get(peerId).StoriesStats, x => x.StoryId == storyId).Chapters[chapterId];
                 var chapterData = storiesHandler.GetStoryChapter(storyId, chapterId);
 
                 stringBuilder.Append($"Полученные концовки ({chapterSave.ObtainedEndings.Length}/{chapterData.Endings.Length}):");
@@ -349,9 +346,9 @@ namespace StoryBot.Logic
                     KeyboardButtonColor.Primary);
             }
 
-            var save = savesHandler.GetSave(peerId);
+            var save = savesHandler.Get(peerId);
             save.Current = new SaveProgress();
-            save.Update();
+            savesHandler.Update(save);
 
             vkApi.Messages.Send(new MessagesSendParams
             {
@@ -426,7 +423,7 @@ namespace StoryBot.Logic
         {
             try
             {
-                SaveProgress progress = savesHandler.GetSave(peerId).Current;
+                SaveProgress progress = savesHandler.Get(peerId).Current;
 
                 StoryDocument story;
                 if (progress.Story != null)
@@ -455,10 +452,10 @@ namespace StoryBot.Logic
                 }
                 else
                 {
-                    var save = savesHandler.GetSave(peerId);
+                    var save = savesHandler.Get(peerId);
                     number--;
                     save.Current.Story = number;
-                    save.Update();
+                    savesHandler.Update(save);
                     SendChapterChoiceDialog(peerId, number);
                     return;
                 }
@@ -489,7 +486,7 @@ namespace StoryBot.Logic
                     SendHelloWorld(peerId);
                     break;
                 case "repeat":
-                    SendContent(peerId, savesHandler.GetSave(peerId).Current);
+                    SendContent(peerId, savesHandler.Get(peerId).Current);
                     break;
                 case "reset":
                     SendStoryChoiceDialog(peerId);
