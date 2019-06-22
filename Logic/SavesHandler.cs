@@ -6,6 +6,7 @@ using System.Linq;
 
 namespace StoryBot.Logic
 {
+    [Obsolete]
     public class SavesHandler
     {
         private static readonly NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();

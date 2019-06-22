@@ -214,7 +214,7 @@ namespace StoryBot.Logic
             stringBuilder.Append("Общая статистика:\n\n");
 
             var save = savesHandler.Get(peerId);
-            foreach (var s in storiesHandler.GetAllStories())
+            foreach (var s in storiesHandler.GetAllPrologues())
             {
                 int completedChapters;
                 try
@@ -244,7 +244,7 @@ namespace StoryBot.Logic
         private void SendStats(long peerId, int storyId)
         {
             StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.Append($"Статистика по \"{storiesHandler.GetStoryName(storyId)}\":\n");
+            stringBuilder.Append($"Статистика по \"{storiesHandler.GetPrologue(storyId).Name}\":\n");
 
             SaveChapterStats[] chapters;
             try
@@ -278,7 +278,7 @@ namespace StoryBot.Logic
         private void SendStats(long peerId, int storyId, int chapterId)
         {
             StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.Append($"Статистика по главе {chapterId + 1} истории \"{storiesHandler.GetStoryName(storyId)}\":\n\n");
+            stringBuilder.Append($"Статистика по главе {chapterId + 1} истории \"{storiesHandler.GetPrologue(storyId).Name}\":\n\n");
            
             try
             {
@@ -333,7 +333,7 @@ namespace StoryBot.Logic
             stringBuilder.Append("Выберите историю:\n");
 
             KeyboardBuilder keyboardBuilder = new KeyboardBuilder(true);
-            var storiesList = storiesHandler.GetAllStories();
+            var storiesList = storiesHandler.GetAllPrologues();
             for (int i = 0; i < storiesList.Count; i++)
             {
                 stringBuilder.Append($"[ {i + 1} ] {storiesList[i].Name}\n");
@@ -524,7 +524,12 @@ namespace StoryBot.Logic
                     {
                         RandomId = new DateTime().Millisecond,
                         PeerId = peerId,
-                        Message = $"Неизвестная команда, используйте {}"
+                        Message = vkApi.Board.GetComments(new BoardGetCommentsParams // TEMP: Make help message getting other way
+                        {
+                            GroupId = 181283373,
+                            TopicId = 40379670,
+                            Count = 1
+                        }).Items.Single().Text
                     });
                     break;
             }
