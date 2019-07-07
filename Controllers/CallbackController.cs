@@ -13,11 +13,11 @@ namespace StoryBot.Controllers
 
         private static readonly string secret = Environment.GetEnvironmentVariable("VK_SECRET");
 
-        private readonly MessagesHandler messagesHandler;
+        private readonly EventsHandler eventsHandler;
 
-        public CallbackController(MessagesHandler messagesHandler)
+        public CallbackController(EventsHandler eventsHandler)
         {
-            this.messagesHandler = messagesHandler;
+            this.eventsHandler = eventsHandler;
         }
 
         [HttpPost]
@@ -30,11 +30,15 @@ namespace StoryBot.Controllers
                     switch (update.Type)
                     {
                         case "confirmation":
-                            return Ok(Environment.GetEnvironmentVariable("VK_CONFIGURATION"));
+                            return Ok(Environment.GetEnvironmentVariable("VK_CONFIRMATION"));
                         case "message_new":
-                            messagesHandler.HandleNew(update.Object);
+                            eventsHandler.MessageNewEvent(update.Object);
+                            return Ok("ok");
+                        case "message_allow":
+                            eventsHandler.MessageAllowEvent(update.Object);
                             return Ok("ok");
                         default:
+                            logger.Warn($"Unknown event type '{update.Type}': {update.Object.ToString(Newtonsoft.Json.Formatting.None)} ");
                             return BadRequest("Unknown event");
                     }
                 }

@@ -1,30 +1,30 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
-using Newtonsoft.Json;
-using System;
+using System.Collections.Generic;
 
 namespace StoryBot.Model
 {
-    [Serializable]
     public class SaveProgress
     {
-        [JsonProperty("story")]
+        [BsonConstructor]
+        public SaveProgress()
+        {
+            Position = 0;
+            Unlockables = new List<string>();
+        }
+
         [BsonElement("story")]
         public int? Story { get; set; }
 
-        [JsonProperty("chapter")]
-        [BsonElement("chapter")]
-        public int? Chapter { get; set; }
+        [BsonElement("episode")]
+        public int? Episode { get; set; }
 
-        [JsonProperty("storyline")]
         [BsonElement("storyline")]
         public string Storyline { get; set; }
 
-        [JsonProperty("position")]
         [BsonElement("position")]
         public int Position { get; set; }
 
-        [JsonProperty("achievement")]
-        [BsonElement("achievement")]
-        public int? Achievement { get; set; }
+        [BsonElement("unlockables")]
+        public List<string> Unlockables { get; set; }
     }
 }

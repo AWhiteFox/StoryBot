@@ -11,9 +11,15 @@ namespace StoryBot.Model
         public string Storyline { get; set; }
 
         [BsonElement("position")]
-        public int Position { get; set; }
+        public int? Position { get; set; }
 
         [BsonElement("achievement")]
         public int? Achievement { get; set; }
+
+        [BsonElement("unlocks")]
+        public string Unlocks { get; set; }
+
+        [BsonElement("needed")]
+        public string[] Needed { get; set; }
     }
 }

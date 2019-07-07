@@ -1,20 +1,21 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
 using System;
+using System.Collections.Generic;
 
 namespace StoryBot.Model
 {
-    public class SaveChapterStats
+    public class SaveEpisodeStats
     {
         [BsonElement("endings")]
-        public int[] ObtainedEndings { get; set; }
+        public List<int> ObtainedEndings { get; set; }
 
         [BsonElement("achievements")]
-        public int[] ObtainedAchievements { get; set; }
+        public List<int> ObtainedAchievements { get; set; }
 
-        public SaveChapterStats(int[] ObtainedEndings = null, int[] ObtainedAchievements = null)
+        public SaveEpisodeStats(List<int> ObtainedEndings = null, List<int> ObtainedAchievements = null)
         {
-            this.ObtainedEndings = ObtainedEndings ?? Array.Empty<int>();
-            this.ObtainedAchievements = ObtainedAchievements ?? Array.Empty<int>();
+            this.ObtainedEndings = ObtainedEndings ?? new List<int>();
+            this.ObtainedAchievements = ObtainedAchievements ?? new List<int>();
         }
     }
 }

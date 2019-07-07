@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -26,12 +27,18 @@ namespace StoryBot
         {
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
+            services.AddDataProtection().PersistKeysToFileSystem(new System.IO.DirectoryInfo(@"\keys\"));
+
             services.AddSingleton(sp =>
             {
                 VkApi api = new VkApi();
                 api.Authorize(new ApiAuthParams { AccessToken = Environment.GetEnvironmentVariable("VK_ACCESSTOKEN") });
 
-                return new MessagesHandler(api, new DatabaseHandler(new MongoClient(Environment.GetEnvironmentVariable("MONGODB_URI")).GetDatabase("StoryBot")));
+                var database = new MongoClient(Environment.GetEnvironmentVariable("MONGODB_URI")).GetDatabase("StoryBot");
+                return new EventsHandler(new ReplyHandler(
+                    api,
+                    new StoriesHandler(database.GetCollection<StoryDocument>("stories")),
+                    new SavesHandler(database.GetCollection<SaveDocument>("saves"))));
             });
         }
 
@@ -48,7 +55,9 @@ namespace StoryBot
                 app.UseHsts();
             }
 
-            app.UseHttpsRedirection();
+            // Disabled because I don't have SSL certificate 
+            // app.UseHttpsRedirection();
+
             app.UseMvc();
         }
     }

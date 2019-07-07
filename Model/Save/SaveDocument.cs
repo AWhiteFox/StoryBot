@@ -1,8 +1,7 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Driver;
 using System;
-using System.Linq;
+using System.Collections.Generic;
 
 namespace StoryBot.Model
 {
@@ -10,7 +9,8 @@ namespace StoryBot.Model
     {
         private static readonly NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
-        public static IMongoCollection<SaveDocument> collection;
+        [BsonIgnore]
+        public Action<SaveDocument> UpdateAction { private get; set; }
 
         [BsonId]
         public ObjectId ObjectId { get; set; }
@@ -22,85 +22,105 @@ namespace StoryBot.Model
         public SaveProgress Current { get; set; }
 
         [BsonElement("stats")]
-        public SaveStoryStats[] StoriesStats { get; set; }
+        public List<SaveStoryStats> StoriesStats { get; set; }
 
-        public SaveDocument(long Id, SaveProgress Current = null, SaveStoryStats[] StoriesStats = null)
+        public SaveDocument(long Id, SaveProgress Current = null, List<SaveStoryStats> StoriesStats = null)
         {
             this.Id = Id;
             this.Current = Current ?? new SaveProgress();
-            this.StoriesStats = StoriesStats ?? Array.Empty<SaveStoryStats>();
+            this.StoriesStats = StoriesStats ?? new List<SaveStoryStats>();
         }
 
-        public void AddEnding(int storyId, int chapterId, int endingId)
+        public void Update()
         {
-            int statsId = Array.FindIndex(StoriesStats, x => x.StoryId == storyId);
+            UpdateAction.Invoke(this);
+        }
+
+        public void AddEnding(int storyId, int episodeId, int endingId)
+        {
+            Current = new SaveProgress { Story = Current.Story };
+
+            int statsId = StoriesStats.FindIndex(x => x.StoryId == storyId);
             if (statsId == -1)
             {
-                // TEMP: Log if chapter id != 0
-                if (chapterId != 0)
+                // TEMP: Log if episode id != 0
+                if (episodeId != 0)
                 {
-                    logger.Warn($"Can't find {chapterId + 1} chapters in save {Id} in story {storyId}");
+                    logger.Warn($"Can't find {episodeId + 1} episodes in save {Id} in story {storyId}");
                 }
-                StoriesStats.Append(new SaveStoryStats(storyId, new SaveChapterStats[chapterId + 1]));
-                StoriesStats[0].Chapters[chapterId].ObtainedEndings.Append(endingId);
+                StoriesStats.Add(new SaveStoryStats(storyId, new List<SaveEpisodeStats>()));
+
+                if (!StoriesStats[0].Episodes[episodeId].ObtainedEndings.Contains(endingId))
+                    StoriesStats[0].Episodes[episodeId].ObtainedEndings.Add(endingId);
             }
             else
             {
                 try
                 {
-                    StoriesStats[statsId].Chapters[chapterId].ObtainedEndings.Append(endingId);
+                    if (!StoriesStats[0].Episodes[episodeId].ObtainedEndings.Contains(endingId))
+                        StoriesStats[0].Episodes[episodeId].ObtainedEndings.Add(endingId);
                 }
-                catch (IndexOutOfRangeException)
+                catch (ArgumentOutOfRangeException)
                 {
-                    StoriesStats[statsId].Chapters.Append(new SaveChapterStats());
+                    StoriesStats[statsId].Episodes.Add(new SaveEpisodeStats());
                     // TEMP: try
                     try
                     {
-                        StoriesStats[statsId].Chapters[chapterId].ObtainedEndings.Append(endingId);
+                        if (!StoriesStats[statsId].Episodes[episodeId].ObtainedEndings.Contains(endingId))
+                            StoriesStats[statsId].Episodes[episodeId].ObtainedEndings.Add(endingId);
                     }
                     catch (IndexOutOfRangeException)
                     {
-                        logger.Error($"Error in chapters sequence in save {Id} in story {storyId}");
+                        logger.Error($"Error in episodes sequence in save {Id} in story {storyId}");
                         throw;
                     }
                 }
             }
         }
 
-        public void AddAchievement(int storyId, int chapterId, int achievementId)
+        public void AddAchievement(int storyId, int episodeId, int achievementId)
         {
-            int statsId = Array.FindIndex(StoriesStats, x => x.StoryId == storyId);
+            int statsId = StoriesStats.FindIndex(x => x.StoryId == storyId);
             if (statsId == -1)
             {
-                // TEMP: Log if chapter id != 0
-                if (chapterId != 0)
+                // TEMP: Log if episode id != 0
+                if (episodeId != 0)
                 {
-                    logger.Warn($"Can't find {chapterId + 1} chapters in save {Id} in story {storyId}");
+                    logger.Warn($"Can't find {episodeId + 1} episodes in save {Id} in story {storyId}");
                 }
-                StoriesStats.Append(new SaveStoryStats(storyId, new SaveChapterStats[chapterId + 1]));
-                StoriesStats[0].Chapters[chapterId].ObtainedAchievements.Append(achievementId);
+                StoriesStats.Add(new SaveStoryStats(storyId, new List<SaveEpisodeStats>()));
+                
+                if (!StoriesStats[0].Episodes[episodeId].ObtainedAchievements.Contains(achievementId))
+                    StoriesStats[0].Episodes[episodeId].ObtainedAchievements.Add(achievementId);
             }
             else
             {
                 try
                 {
-                    StoriesStats[statsId].Chapters[chapterId].ObtainedAchievements.Append(achievementId);
+                    if (!StoriesStats[statsId].Episodes[episodeId].ObtainedAchievements.Contains(achievementId))
+                        StoriesStats[statsId].Episodes[episodeId].ObtainedAchievements.Add(achievementId);
                 }
-                catch (IndexOutOfRangeException)
+                catch (ArgumentOutOfRangeException)
                 {
-                    StoriesStats[statsId].Chapters.Append(new SaveChapterStats());
+                    StoriesStats[statsId].Episodes.Add(new SaveEpisodeStats());
                     // TEMP: try
                     try
                     {
-                        StoriesStats[statsId].Chapters[chapterId].ObtainedAchievements.Append(achievementId);
+                        if (!StoriesStats[statsId].Episodes[episodeId].ObtainedAchievements.Contains(achievementId))
+                            StoriesStats[statsId].Episodes[episodeId].ObtainedAchievements.Add(achievementId);
                     }
                     catch (IndexOutOfRangeException)
                     {
-                        logger.Error($"Error in chapters sequence in save {Id} in story {storyId}");
+                        logger.Error($"Error in episodes sequence in save {Id} in story {storyId}");
                         throw;
                     }
                 }
             }
+        }
+
+        public void AddUnlockable(string name)
+        {
+            Current.Unlockables.Add(name);
         }
     }
 }

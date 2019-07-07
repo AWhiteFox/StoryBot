@@ -1,5 +1,6 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using System;
 
 namespace StoryBot.Model
 {
@@ -9,10 +10,10 @@ namespace StoryBot.Model
         public ObjectId ObjectId { get; set; }
 
         [BsonElement("id")]
-        public int Id { get; set; }
+        public int StoryId { get; set; }
 
-        [BsonElement("chapter")]
-        public int Chapter { get; set; }
+        [BsonElement("episode")]
+        public int Episode { get; set; }
 
         [BsonElement("name")]
         public string Name { get; set; }
@@ -20,13 +21,10 @@ namespace StoryBot.Model
         [BsonElement("storylines")]
         public Storyline[] Storylines { get; set; }
 
-        [BsonElement("beginning")]
-        public string Beginning { get; set; }
-
         [BsonElement("endings")]
-        public StoryEnding[] Endings { get; set; }
+        public StoryEnding[] Endings { get; set; } = Array.Empty<StoryEnding>();
 
         [BsonElement("achievements")]
-        public StoryAchievement[] Achievements { get; set; }
+        public StoryAchievement[] Achievements { get; set; } = Array.Empty<StoryAchievement>();
     }
 }
