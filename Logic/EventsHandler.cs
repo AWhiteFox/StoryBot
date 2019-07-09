@@ -40,17 +40,20 @@ namespace StoryBot.Logic
                             reply.ReplyFirstMessage(peerId);
                         }
                     }
-                    else if (message.Text[0] == MessageBuilder.Prefix)
+                    else if (!string.IsNullOrEmpty(message.Text))
                     {
-                        reply.ReplyToCommand(peerId, message.Text.Remove(0, 1).ToLower());
-                    }
-                    else if (int.TryParse(message.Text, out int number))
-                    {
-                        reply.ReplyToNumber(peerId, number);
-                    }
-                    else if (message.Text.ToLower() == "начать")
-                    {
-                        reply.ReplyFirstMessage(peerId);
+                        if (message.Text[0] == MessageBuilder.Prefix)
+                        {
+                            reply.ReplyToCommand(peerId, message.Text.Remove(0, 1).ToLower());
+                        }
+                        else if (int.TryParse(message.Text, out int number))
+                        {
+                            reply.ReplyToNumber(peerId, number);
+                        }
+                        else if (message.Text.ToLower() == "начать")
+                        {
+                            reply.ReplyFirstMessage(peerId);
+                        }
                     }
                 }
                 catch (Exception exception)
