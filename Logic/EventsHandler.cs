@@ -30,10 +30,14 @@ namespace StoryBot.Logic
                 {
                     if (!string.IsNullOrEmpty(message.Payload))
                     {
-                        var button = JsonConvert.DeserializeObject<MessagePayload>(message.Payload).Button;
-                        if (!string.IsNullOrEmpty(button))
+                        var payload = JsonConvert.DeserializeObject<MessagePayload>(message.Payload);
+                        if (!string.IsNullOrEmpty(payload.Button))
                         {
-                            reply.ReplyToNumber(peerId, int.Parse(button));
+                            reply.ReplyToNumber(peerId, int.Parse(payload.Button));
+                        }
+                        else if (payload.Command == "start")
+                        {
+                            reply.ReplyFirstMessage(peerId);
                         }
                     }
                     else if (message.Text[0] == MessageBuilder.Prefix)

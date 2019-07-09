@@ -8,5 +8,8 @@ namespace StoryBot.Model
     {
         [JsonProperty("button")]
         public string Button { get; set; }
+
+        [JsonProperty("command")]
+        public string Command { get; set; }
     }
 }
