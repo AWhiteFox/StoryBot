@@ -26,5 +26,10 @@ namespace StoryBot.Model
 
         [BsonElement("achievements")]
         public StoryAchievement[] Achievements { get; set; } = Array.Empty<StoryAchievement>();
+
+        public Storyline GetStoryline(string tag)
+        {
+            return Array.Find(Storylines, x => x.Tag == tag);
+        }
     }
 }

@@ -27,9 +27,7 @@ namespace StoryBot.Logic
             var results = collection.Find(Builders<SaveDocument>.Filter.Eq("id", id));
             try
             {
-                var save = results.Single();
-                save.UpdateAction = (SaveDocument s) => collection.ReplaceOne(Builders<SaveDocument>.Filter.Eq("id", s.Id), s);
-                return save;
+                return results.Single();
             }
             catch (InvalidOperationException)
             {
@@ -50,6 +48,11 @@ namespace StoryBot.Logic
         public void CreateNew(SaveDocument save)
         {
             collection.InsertOne(save);
+        }
+
+        public void Update(SaveDocument save)
+        {
+            collection.ReplaceOne(Builders<SaveDocument>.Filter.Eq("id", save.Id), save);
         }
     }
 }

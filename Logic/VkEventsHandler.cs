@@ -42,7 +42,7 @@ namespace StoryBot.Logic
                     }
                     else if (!string.IsNullOrEmpty(message.Text))
                     {
-                        if (message.Text[0] == MessageBuilder.Prefix)
+                        if (message.Text[0] == VkMessageBuilder.Prefix)
                         {
                             reply.ReplyToCommand(peerId, message.Text.Remove(0, 1).ToLower());
                         }

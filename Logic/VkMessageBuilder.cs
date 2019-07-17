@@ -9,13 +9,18 @@ using VkNet.Model.Keyboard;
 
 namespace StoryBot.Logic
 {
-    public static class MessageBuilder
+    public class VkMessageBuilder
     {
-        private static readonly NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
+        private readonly NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
-        public static readonly char Prefix = '.';
+        public readonly char Prefix;
 
-        public static (string, MessageKeyboard) BuildContent(StorylineElement storylineElement, List<string> unlockables)
+        public VkMessageBuilder(char prefix)
+        {
+            Prefix = prefix;
+        }
+
+        public (string, MessageKeyboard) BuildContent(StorylineElement storylineElement, List<string> unlockables)
         {
             StringBuilder stringBuilder = new StringBuilder();
             foreach (string x in storylineElement.Content)
@@ -53,7 +58,7 @@ namespace StoryBot.Logic
             return (stringBuilder.ToString(), keyboardBuilder.Build());
         }
 
-        public static (string, MessageKeyboard) BuildStorySelectDialog(List<StoryDocument> prologues)
+        public (string, MessageKeyboard) BuildStorySelectDialog(List<StoryDocument> prologues)
         {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.Append("Выберите историю из представленных:\n");
@@ -71,7 +76,7 @@ namespace StoryBot.Logic
             return (stringBuilder.ToString(), keyboardBuilder.Build());
         }
 
-        public static (string, MessageKeyboard) BuildEpisodeSelectDialog(List<StoryDocument> episodes, SaveStoryStats storyProgress)
+        public (string, MessageKeyboard) BuildEpisodeSelectDialog(List<StoryDocument> episodes, SaveStoryStats storyProgress)
         {
             StringBuilder stringBuilder = new StringBuilder();
             KeyboardBuilder keyboardBuilder = new KeyboardBuilder(false);
@@ -106,7 +111,7 @@ namespace StoryBot.Logic
             return (stringBuilder.ToString(), keyboardBuilder.Build());
         }
 
-        public static (string, MessageKeyboard) BuildEnding(StoryDocument story, int position)
+        public (string, MessageKeyboard) BuildEnding(StoryDocument story, int position)
         {
             StringBuilder stringBuilder = new StringBuilder();
 
@@ -139,12 +144,12 @@ namespace StoryBot.Logic
             return (stringBuilder.ToString(), null /*UNDONE: Add keyboard*/);
         }
 
-        public static string BuildAchievement(StoryAchievement achievement)
+        public string BuildAchievement(StoryAchievement achievement)
         {
             return $"Вы заработали достижение {achievement.Name}!\n - {achievement.Description}\n\n";
         }
 
-        public static string BuildBeginningMessage()
+        public string BuildBeginningMessage()
         {
             StringBuilder stringBuilder = new StringBuilder();
 
@@ -158,7 +163,7 @@ namespace StoryBot.Logic
             return stringBuilder.ToString();
         }
 
-        public static string BuildCommandList()
+        public string BuildCommandList()
         {
             StringBuilder stringBuilder = new StringBuilder("Список команд:\n\n");
 
@@ -173,7 +178,7 @@ namespace StoryBot.Logic
             return stringBuilder.ToString();
         }
 
-        public static string BuildStats(List<StoryDocument> prologues, List<SaveStoryStats> storiesStats)
+        public string BuildStats(List<StoryDocument> prologues, List<SaveStoryStats> storiesStats)
         {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.Append("Общая статистика:\n\n");
@@ -194,7 +199,7 @@ namespace StoryBot.Logic
             return stringBuilder.ToString();
         }
 
-        public static string BuildStoryStats(List<StoryDocument> episodes, List<SaveEpisodeStats> episodesStats)
+        public string BuildStoryStats(List<StoryDocument> episodes, List<SaveEpisodeStats> episodesStats)
         {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.Append($"Статистика по \"{episodes[0].Name}\":\n");
@@ -238,7 +243,7 @@ namespace StoryBot.Logic
             return stringBuilder.ToString();
         }
 
-        public static string BuildEpisodeStats(StoryDocument episodeData, SaveEpisodeStats episodeStats)
+        public string BuildEpisodeStats(StoryDocument episodeData, SaveEpisodeStats episodeStats)
         {
             if (episodeData.Episode == 0)
             {

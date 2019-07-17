@@ -6,5 +6,6 @@ namespace StoryBot.Abstractions
     {
         void CreateNew(SaveDocument save);
         SaveDocument Get(long id);
+        void Update(SaveDocument save);
     }
 }

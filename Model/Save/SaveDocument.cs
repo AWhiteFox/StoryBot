@@ -9,9 +9,6 @@ namespace StoryBot.Model
     {
         private static readonly NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
-        [BsonIgnore]
-        public Action<SaveDocument> UpdateAction { private get; set; }
-
         [BsonId]
         public ObjectId ObjectId { get; set; }
 
@@ -29,11 +26,6 @@ namespace StoryBot.Model
             this.Id = Id;
             this.Current = Current ?? new SaveProgress();
             this.StoriesStats = StoriesStats ?? new List<SaveStoryStats>();
-        }
-
-        public void Update()
-        {
-            UpdateAction.Invoke(this);
         }
 
         public void AddEnding(int storyId, int episodeId, int endingId)
