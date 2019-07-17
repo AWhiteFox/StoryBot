@@ -5,13 +5,13 @@ using NLog.Targets;
 using NLog.Web;
 using System;
 
-namespace StoryBot
+namespace StoryBot.Vk
 {
     public class Program
     {
         public static void Main(string[] args)
         {
-            Target.Register<Logging.NLogTargetDiscord>("Discord");
+            Target.Register<Core.Logging.NLogTargetDiscord>("Discord");
             NLog.Logger logger = NLogBuilder.ConfigureNLog("NLog.config").GetCurrentClassLogger();
 
             try

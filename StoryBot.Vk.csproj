@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.2</TargetFramework>
     <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
-    <StartupObject>StoryBot.Program</StartupObject>
+    <StartupObject>StoryBot.Vk.Program</StartupObject>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -31,9 +31,15 @@
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="2.2.3" />
     <PackageReference Include="MongoDB.Driver" Version="2.8.1" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
-    <PackageReference Include="NLog" Version="4.6.3" />
+    <PackageReference Include="NLog" Version="4.6.6" />
     <PackageReference Include="NLog.Web.AspNetCore" Version="4.8.2" />
     <PackageReference Include="VkNet" Version="1.43.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="StoryBot.Core">
+      <HintPath>lib\StoryBot.Core.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>

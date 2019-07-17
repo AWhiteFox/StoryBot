@@ -1,5 +1,5 @@
-﻿using StoryBot.Extensions;
-using StoryBot.Model;
+﻿using StoryBot.Core.Extensions;
+using StoryBot.Core.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +7,7 @@ using System.Text;
 using VkNet.Enums.SafetyEnums;
 using VkNet.Model.Keyboard;
 
-namespace StoryBot.Logic
+namespace StoryBot.Vk.Logic
 {
     public class VkMessageBuilder
     {

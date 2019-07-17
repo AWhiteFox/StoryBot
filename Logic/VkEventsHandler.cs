@@ -1,20 +1,21 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using StoryBot.Model;
+using StoryBot.Vk.Model;
+using StoryBot.Vk.Vk.Logic;
 using System;
 using VkNet.Model;
 using VkNet.Model.GroupUpdate;
 using VkNet.Utils;
 
-namespace StoryBot.Logic
+namespace StoryBot.Vk.Logic
 {
     public class EventsHandler
     {
         private static readonly NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
-        private readonly ReplyHandler reply;
+        private readonly VkReplyHandler reply;
 
-        public EventsHandler(ReplyHandler reply)
+        public EventsHandler(VkReplyHandler reply)
         {
             this.reply = reply;
         }
@@ -42,7 +43,7 @@ namespace StoryBot.Logic
                     }
                     else if (!string.IsNullOrEmpty(message.Text))
                     {
-                        if (message.Text[0] == VkMessageBuilder.Prefix)
+                        if (message.Text[0] == reply.Prefix)
                         {
                             reply.ReplyToCommand(peerId, message.Text.Remove(0, 1).ToLower());
                         }

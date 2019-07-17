@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using StoryBot.Logic;
-using StoryBot.Model;
+using StoryBot.Vk.Logic;
+using StoryBot.Vk.Model;
 using System;
 
-namespace StoryBot.Controllers
+namespace StoryBot.Vk.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]

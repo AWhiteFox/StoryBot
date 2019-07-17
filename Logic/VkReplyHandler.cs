@@ -1,5 +1,6 @@
-﻿using StoryBot.Abstractions;
-using StoryBot.Model;
+﻿using StoryBot.Core.Abstractions;
+using StoryBot.Core.Model;
+using StoryBot.Vk.Logic;
 using System;
 using System.Linq;
 using VkNet.Abstractions;
@@ -7,11 +8,8 @@ using VkNet.Model;
 using VkNet.Model.Keyboard;
 using VkNet.Model.RequestParams;
 
-/*
- * TODO: Move Array.Find to Model
- */
 
-namespace StoryBot.Logic
+namespace StoryBot.Vk.Vk.Logic
 {
     public class VkReplyHandler
     {
@@ -23,12 +21,14 @@ namespace StoryBot.Logic
 
         private readonly VkMessageBuilder messageBuilder;
 
+        public readonly char Prefix = Environment.GetEnvironmentVariable("BOT_PREFIX")[0];
+
         public VkReplyHandler(IVkApi vk, IStoriesHandler stories, ISavesHandler saves)
         {
             this.vk = vk;
             this.stories = stories;
             this.saves = saves;
-            this.messageBuilder = new VkMessageBuilder('.'); // TEMP: Temporary MessageBuilder creation
+            this.messageBuilder = new VkMessageBuilder(Prefix); // TEMP: Temporary MessageBuilder creation
         }
 
         // Replies //

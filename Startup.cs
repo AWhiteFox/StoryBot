@@ -5,13 +5,15 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
-using StoryBot.Logic;
-using StoryBot.Model;
+using StoryBot.Core.Logic;
+using StoryBot.Core.Model;
+using StoryBot.Vk.Logic;
+using StoryBot.Vk.Vk.Logic;
 using System;
 using VkNet;
 using VkNet.Model;
 
-namespace StoryBot
+namespace StoryBot.Vk
 {
     public class Startup
     {
@@ -34,8 +36,8 @@ namespace StoryBot
                 VkApi api = new VkApi();
                 api.Authorize(new ApiAuthParams { AccessToken = Environment.GetEnvironmentVariable("VK_ACCESSTOKEN") });
 
-                var database = new MongoClient(Environment.GetEnvironmentVariable("MONGODB_URI")).GetDatabase("StoryBot");
-                return new EventsHandler(new ReplyHandler(
+                var database = new MongoClient(Environment.GetEnvironmentVariable("MONGODB_URI")).GetDatabase("StoryBot.Vk");
+                return new EventsHandler(new VkReplyHandler(
                     api,
                     new StoriesHandler(database.GetCollection<StoryDocument>("stories")),
                     new SavesHandler(database.GetCollection<SaveDocument>("saves"))));

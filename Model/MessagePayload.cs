@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 
-namespace StoryBot.Model
+namespace StoryBot.Vk.Model
 {
     [Serializable]
     public class MessagePayload
