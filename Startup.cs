@@ -29,18 +29,16 @@ namespace StoryBot.Vk
         {
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
-            services.AddDataProtection().PersistKeysToFileSystem(new System.IO.DirectoryInfo(@"\keys\"));
-
             services.AddSingleton(sp =>
             {
                 VkApi api = new VkApi();
                 api.Authorize(new ApiAuthParams { AccessToken = Environment.GetEnvironmentVariable("VK_ACCESSTOKEN") });
 
-                var database = new MongoClient(Environment.GetEnvironmentVariable("MONGODB_URI")).GetDatabase("StoryBot.Vk");
-                return new EventsHandler(new VkReplyHandler(
+                var database = new MongoClient(Environment.GetEnvironmentVariable("MONGODB_URI")).GetDatabase("StoryBot");
+                return new VkEventsHandler(new VkReplyHandler(
                     api,
                     new StoriesHandler(database.GetCollection<StoryDocument>("stories")),
-                    new SavesHandler(database.GetCollection<SaveDocument>("saves"))));
+                    new SavesHandler(database.GetCollection<SaveDocument>("vkSaves"))));
             });
         }
 

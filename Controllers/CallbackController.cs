@@ -9,33 +9,48 @@ namespace StoryBot.Vk.Controllers
     [ApiController]
     public class CallbackController : ControllerBase
     {
+        /// <summary>
+        /// Logger
+        /// </summary>
         private static readonly NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
+        /// <summary>
+        /// VK secret string
+        /// </summary>
         private static readonly string secret = Environment.GetEnvironmentVariable("VK_SECRET");
 
-        private readonly EventsHandler eventsHandler;
+        /// <summary>
+        /// Events handler
+        /// </summary>
+        private readonly VkEventsHandler eventsHandler;
 
-        public CallbackController(EventsHandler eventsHandler)
+        /// <summary>
+        /// Default constructor
+        /// </summary>
+        /// <param name="eventsHandler"></param>
+        public CallbackController(VkEventsHandler eventsHandler)
         {
             this.eventsHandler = eventsHandler;
         }
 
+        /// <summary>
+        /// HTTP POST handling
+        /// </summary>
+        /// <param name="update"></param>
+        /// <returns></returns>
         [HttpPost]
         public IActionResult Post([FromBody] CallbackUpdate update)
         {
-            if (update.Secret == secret)
+            if (update.Secret == secret) // VK secret string check
             {
-                try
+                try // If something went wrong return Bad Request
                 {
-                    switch (update.Type)
+                    switch (update.Type) // Event type
                     {
                         case "confirmation":
                             return Ok(Environment.GetEnvironmentVariable("VK_CONFIRMATION"));
                         case "message_new":
                             eventsHandler.MessageNewEvent(update.Object);
-                            return Ok("ok");
-                        case "message_allow":
-                            eventsHandler.MessageAllowEvent(update.Object);
                             return Ok("ok");
                         default:
                             logger.Warn($"Unknown event type '{update.Type}': {update.Object.ToString(Newtonsoft.Json.Formatting.None)} ");

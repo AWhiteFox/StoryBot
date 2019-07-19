@@ -4,6 +4,9 @@ using System;
 
 namespace StoryBot.Vk.Model
 {
+    /// <summary>
+    /// VK Callback Update
+    /// </summary>
     [Serializable]
     public class CallbackUpdate
     {

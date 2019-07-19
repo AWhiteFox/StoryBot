@@ -11,18 +11,35 @@ namespace StoryBot.Vk.Logic
 {
     public class VkMessageBuilder
     {
+        /// <summary>
+        /// Logger
+        /// </summary>
         private readonly NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
-        public readonly char Prefix;
+        /// <summary>
+        /// Command prefix
+        /// </summary>
+        private readonly char Prefix;
 
+        /// <summary>
+        /// Default constructor
+        /// </summary>
+        /// <param name="prefix"></param>
         public VkMessageBuilder(char prefix)
         {
             Prefix = prefix;
         }
 
+        /// <summary>
+        /// Default content message
+        /// </summary>
+        /// <param name="storylineElement"></param>
+        /// <param name="unlockables"></param>
+        /// <returns></returns>
         public (string, MessageKeyboard) BuildContent(StorylineElement storylineElement, List<string> unlockables)
         {
             StringBuilder stringBuilder = new StringBuilder();
+            // Add content per-line
             foreach (string x in storylineElement.Content)
             {
                 stringBuilder.Append(x + "\n");
@@ -30,34 +47,41 @@ namespace StoryBot.Vk.Logic
             stringBuilder.Append("\n");
 
             KeyboardBuilder keyboardBuilder = new KeyboardBuilder(false);
+            // Add options
             for (int i = 0; i < storylineElement.Options.Length; i++)
             {
                 var x = storylineElement.Options[i];
 
+                // If current progress already contains unlockable skip option
                 if (unlockables.Contains(x.Unlocks))
                     continue;
 
-                if (x.Needed == null)
+                // Needed check
+                var color = KeyboardButtonColor.Default;
+                if (x.Needed != null)
                 {
-                    stringBuilder.Append($"[ {i + 1} ] {x.Content}\n");
-
-                    keyboardBuilder.AddButton($"[ {i + 1} ]",
-                        (i + 1).ToString(),
-                        KeyboardButtonColor.Default);
+                    if (x.Needed.All(unlockables.Contains))
+                    {
+                        color = KeyboardButtonColor.Positive;
+                    }
+                    else continue;
                 }
-                else if (x.Needed.All(unlockables.Contains))
-                {
-                    stringBuilder.Append($"[ {i + 1} ] {x.Content}\n");
 
-                    keyboardBuilder.AddButton($"[ {i + 1} ]",
-                        (i + 1).ToString(),
-                        KeyboardButtonColor.Positive);
-                }
+                // Add option to message and buttons
+                stringBuilder.Append($"[ {i + 1} ] {x.Content}\n");
+                keyboardBuilder.AddButton($"[ {i + 1} ]",
+                    (i + 1).ToString(),
+                    color);
             }
 
             return (stringBuilder.ToString(), keyboardBuilder.Build());
         }
 
+        /// <summary>
+        /// Story select dialog
+        /// </summary>
+        /// <param name="prologues"></param>
+        /// <returns></returns>
         public (string, MessageKeyboard) BuildStorySelectDialog(List<StoryDocument> prologues)
         {
             StringBuilder stringBuilder = new StringBuilder();
@@ -76,6 +100,12 @@ namespace StoryBot.Vk.Logic
             return (stringBuilder.ToString(), keyboardBuilder.Build());
         }
 
+        /// <summary>
+        /// Episode select dialog
+        /// </summary>
+        /// <param name="episodes"></param>
+        /// <param name="storyProgress"></param>
+        /// <returns></returns>
         public (string, MessageKeyboard) BuildEpisodeSelectDialog(List<StoryDocument> episodes, SaveStoryStats storyProgress)
         {
             StringBuilder stringBuilder = new StringBuilder();
@@ -111,6 +141,12 @@ namespace StoryBot.Vk.Logic
             return (stringBuilder.ToString(), keyboardBuilder.Build());
         }
 
+        /// <summary>
+        /// Ending message
+        /// </summary>
+        /// <param name="story"></param>
+        /// <param name="position"></param>
+        /// <returns></returns>
         public (string, MessageKeyboard) BuildEnding(StoryDocument story, int position)
         {
             StringBuilder stringBuilder = new StringBuilder();
@@ -128,12 +164,12 @@ namespace StoryBot.Vk.Logic
                 if (position == 0) // Check if ending canonical
                 {
                     stringBuilder.Append($"\nПоздравляем, вы получили каноничную концовку \"{ending.Name}\"!\n\n");
-                    stringBuilder.Append($"Этот эпизод содержит еще {alternativeEndingsCount} альтернативные концовки.");
+                    stringBuilder.Append($"Вы можете пройти этот эпизод еще раз. Он содержит еще {alternativeEndingsCount} альтернативные концовки.");
                 }
                 else // Alternative
                 {
                     stringBuilder.Append($"\nПоздравляем, вы получили альтернативную концовку \"{ending.Name}\"!\n\n");
-                    stringBuilder.Append($"Этот эпизод содержит еще {alternativeEndingsCount - 1} альтернативные концовки и одну каноничную.");
+                    stringBuilder.Append($"Вы можете пройти этот эпизод еще раз. Он содержит еще {alternativeEndingsCount - 1} альтернативные концовки и одну каноничную.");
                 }
             }
             else // If it is a prologue
@@ -141,14 +177,23 @@ namespace StoryBot.Vk.Logic
                 stringBuilder.Append("\nПоздравляем, вы завершили пролог!");
             }
 
-            return (stringBuilder.ToString(), null /*UNDONE: Add keyboard*/);
+            return (stringBuilder.ToString(), null /*TODO: Add keyboard*/);
         }
 
+        /// <summary>
+        /// Achievement message
+        /// </summary>
+        /// <param name="achievement"></param>
+        /// <returns></returns>
         public string BuildAchievement(StoryAchievement achievement)
         {
             return $"Вы заработали достижение {achievement.Name}!\n - {achievement.Description}\n\n";
         }
 
+        /// <summary>
+        /// Beginning message
+        /// </summary>
+        /// <returns></returns>
         public string BuildBeginningMessage()
         {
             StringBuilder stringBuilder = new StringBuilder();
@@ -163,6 +208,10 @@ namespace StoryBot.Vk.Logic
             return stringBuilder.ToString();
         }
 
+        /// <summary>
+        /// Command list
+        /// </summary>
+        /// <returns></returns>
         public string BuildCommandList()
         {
             StringBuilder stringBuilder = new StringBuilder("Список команд:\n\n");
@@ -178,6 +227,12 @@ namespace StoryBot.Vk.Logic
             return stringBuilder.ToString();
         }
 
+        /// <summary>
+        /// Short stats for all stories
+        /// </summary>
+        /// <param name="prologues"></param>
+        /// <param name="storiesStats"></param>
+        /// <returns></returns>
         public string BuildStats(List<StoryDocument> prologues, List<SaveStoryStats> storiesStats)
         {
             StringBuilder stringBuilder = new StringBuilder();
@@ -199,6 +254,12 @@ namespace StoryBot.Vk.Logic
             return stringBuilder.ToString();
         }
 
+        /// <summary>
+        /// Detailed stats for one story
+        /// </summary>
+        /// <param name="episodes"></param>
+        /// <param name="episodesStats"></param>
+        /// <returns></returns>
         public string BuildStoryStats(List<StoryDocument> episodes, List<SaveEpisodeStats> episodesStats)
         {
             StringBuilder stringBuilder = new StringBuilder();
@@ -243,6 +304,12 @@ namespace StoryBot.Vk.Logic
             return stringBuilder.ToString();
         }
 
+        /// <summary>
+        /// Detailed stats for one episode
+        /// </summary>
+        /// <param name="episodeData"></param>
+        /// <param name="episodeStats"></param>
+        /// <returns></returns>
         public string BuildEpisodeStats(StoryDocument episodeData, SaveEpisodeStats episodeStats)
         {
             if (episodeData.Episode == 0)

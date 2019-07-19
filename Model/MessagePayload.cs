@@ -3,6 +3,9 @@ using System;
 
 namespace StoryBot.Vk.Model
 {
+    /// <summary>
+    /// Payload of VK Message
+    /// </summary>
     [Serializable]
     public class MessagePayload
     {
