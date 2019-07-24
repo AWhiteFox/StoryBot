@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Logging;
-using NLog.Targets;
 using NLog.Web;
 using System;
 
@@ -11,8 +10,8 @@ namespace StoryBot.Vk
     {
         public static void Main(string[] args)
         {
-            Target.Register<Core.Logging.NLogTargetDiscord>("Discord");
             NLog.Logger logger = NLogBuilder.ConfigureNLog("NLog.config").GetCurrentClassLogger();
+            ConfigureNLogDiscord();
 
             try
             {
@@ -39,5 +38,24 @@ namespace StoryBot.Vk
                     logging.SetMinimumLevel(LogLevel.Trace);
                 })
                 .UseNLog();
+
+        private static void ConfigureNLogDiscord()
+        {
+            NLog.LogManager.Configuration.AddTarget("DiscordNotCritical", new NLog.Discord.WebhookTarget
+            {
+                UseEmbeds = false,
+                Layout = "${time} | **${uppercase:${level}}** | ${logger} | ${message}",
+                Id = ulong.Parse(Environment.GetEnvironmentVariable("DISCORD_WEBHOOKID")),
+                Token = Environment.GetEnvironmentVariable("DISCORD_WEBHOOKTOKEN")
+            });
+            NLog.LogManager.Configuration.AddTarget("DiscordCritical", new NLog.Discord.WebhookTarget
+            {
+                Id = ulong.Parse(Environment.GetEnvironmentVariable("DISCORD_WEBHOOKID")),
+                Token = Environment.GetEnvironmentVariable("DISCORD_WEBHOOKTOKEN")
+            });
+            NLog.LogManager.Configuration.AddRule(NLog.LogLevel.Trace, NLog.LogLevel.Info, "DiscordNotCritical");
+            NLog.LogManager.Configuration.AddRule(NLog.LogLevel.Warn, NLog.LogLevel.Fatal, "DiscordCritical");
+            NLog.LogManager.ReconfigExistingLoggers();
+        }
     }
 }

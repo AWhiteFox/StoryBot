@@ -1,4 +1,5 @@
-﻿using StoryBot.Core.Extensions;
+﻿using StoryBot.Core.Abstractions;
+using StoryBot.Core.Extensions;
 using StoryBot.Core.Model;
 using System;
 using System.Collections.Generic;
@@ -6,10 +7,11 @@ using System.Linq;
 using System.Text;
 using VkNet.Enums.SafetyEnums;
 using VkNet.Model.Keyboard;
+using VkNet.Model.RequestParams;
 
 namespace StoryBot.Vk.Logic
 {
-    public class VkMessageBuilder
+    public class VkMessageBuilder : IMessageBuilder<MessagesSendParams>
     {
         /// <summary>
         /// Logger
@@ -19,7 +21,7 @@ namespace StoryBot.Vk.Logic
         /// <summary>
         /// Command prefix
         /// </summary>
-        private readonly char Prefix;
+        private char Prefix { get; }
 
         /// <summary>
         /// Default constructor
@@ -30,13 +32,7 @@ namespace StoryBot.Vk.Logic
             Prefix = prefix;
         }
 
-        /// <summary>
-        /// Default content message
-        /// </summary>
-        /// <param name="storylineElement"></param>
-        /// <param name="unlockables"></param>
-        /// <returns></returns>
-        public (string, MessageKeyboard) BuildContent(StorylineElement storylineElement, List<string> unlockables)
+        public MessagesSendParams BuildContent(StorylineElement storylineElement, List<string> unlockables)
         {
             StringBuilder stringBuilder = new StringBuilder();
             // Add content per-line
@@ -74,15 +70,58 @@ namespace StoryBot.Vk.Logic
                     color);
             }
 
-            return (stringBuilder.ToString(), keyboardBuilder.Build());
+            return new MessagesSendParams
+            {
+                Message = stringBuilder.ToString(),
+                Keyboard = keyboardBuilder.Build()
+            };
         }
 
-        /// <summary>
-        /// Story select dialog
-        /// </summary>
-        /// <param name="prologues"></param>
-        /// <returns></returns>
-        public (string, MessageKeyboard) BuildStorySelectDialog(List<StoryDocument> prologues)
+        public MessagesSendParams BuildAchievement(StoryAchievement achievement)
+        {
+            return new MessagesSendParams
+            {
+                Message = $"Вы заработали достижение {achievement.Name}!\n - {achievement.Description}\n\n"
+            };
+        }
+
+        public MessagesSendParams BuildEnding(StoryDocument story, int position)
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+
+            if (story.Episode != 0) // Prologue check
+            {
+                StoryEnding ending = story.Endings[position];
+
+                foreach (string x in ending.Content)
+                {
+                    stringBuilder.Append(x + "\n");
+                }
+
+                int alternativeEndingsCount = story.Endings.Length - 1;
+                if (position == 0) // Check if ending canonical
+                {
+                    stringBuilder.Append($"\nПоздравляем, вы получили каноничную концовку \"{ending.Name}\"!\n\n");
+                    stringBuilder.Append($"Вы можете пройти этот эпизод еще раз. Он содержит еще {alternativeEndingsCount} альтернативные концовки.");
+                }
+                else // Alternative
+                {
+                    stringBuilder.Append($"\nПоздравляем, вы получили альтернативную концовку \"{ending.Name}\"!\n\n");
+                    stringBuilder.Append($"Вы можете пройти этот эпизод еще раз. Он содержит еще {alternativeEndingsCount - 1} альтернативные концовки и одну каноничную.");
+                }
+            }
+            else // If it is a prologue
+            {
+                stringBuilder.Append("\nПоздравляем, вы завершили пролог!");
+            }
+
+            return new MessagesSendParams
+            {
+                Message = stringBuilder.ToString()
+            };
+        }
+
+        public MessagesSendParams BuildStorySelectDialog(List<StoryDocument> prologues)
         {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.Append("Выберите историю из представленных:\n");
@@ -97,16 +136,14 @@ namespace StoryBot.Vk.Logic
                     KeyboardButtonColor.Primary);
             }
 
-            return (stringBuilder.ToString(), keyboardBuilder.Build());
+            return new MessagesSendParams
+            {
+                Message = stringBuilder.ToString(),
+                Keyboard = keyboardBuilder.Build()
+            };
         }
 
-        /// <summary>
-        /// Episode select dialog
-        /// </summary>
-        /// <param name="episodes"></param>
-        /// <param name="storyProgress"></param>
-        /// <returns></returns>
-        public (string, MessageKeyboard) BuildEpisodeSelectDialog(List<StoryDocument> episodes, SaveStoryStats storyProgress)
+        public MessagesSendParams BuildEpisodeSelectDialog(List<StoryDocument> episodes, SaveStoryStats storyProgress)
         {
             StringBuilder stringBuilder = new StringBuilder();
             KeyboardBuilder keyboardBuilder = new KeyboardBuilder(false);
@@ -138,102 +175,14 @@ namespace StoryBot.Vk.Logic
                 }
             }
 
-            return (stringBuilder.ToString(), keyboardBuilder.Build());
-        }
-
-        /// <summary>
-        /// Ending message
-        /// </summary>
-        /// <param name="story"></param>
-        /// <param name="position"></param>
-        /// <returns></returns>
-        public (string, MessageKeyboard) BuildEnding(StoryDocument story, int position)
-        {
-            StringBuilder stringBuilder = new StringBuilder();
-
-            if (story.Episode != 0) // Prologue check
+            return new MessagesSendParams
             {
-                StoryEnding ending = story.Endings[position];
-
-                foreach (string x in ending.Content)
-                {
-                    stringBuilder.Append(x + "\n");
-                }
-
-                int alternativeEndingsCount = story.Endings.Length - 1;
-                if (position == 0) // Check if ending canonical
-                {
-                    stringBuilder.Append($"\nПоздравляем, вы получили каноничную концовку \"{ending.Name}\"!\n\n");
-                    stringBuilder.Append($"Вы можете пройти этот эпизод еще раз. Он содержит еще {alternativeEndingsCount} альтернативные концовки.");
-                }
-                else // Alternative
-                {
-                    stringBuilder.Append($"\nПоздравляем, вы получили альтернативную концовку \"{ending.Name}\"!\n\n");
-                    stringBuilder.Append($"Вы можете пройти этот эпизод еще раз. Он содержит еще {alternativeEndingsCount - 1} альтернативные концовки и одну каноничную.");
-                }
-            }
-            else // If it is a prologue
-            {
-                stringBuilder.Append("\nПоздравляем, вы завершили пролог!");
-            }
-
-            return (stringBuilder.ToString(), null /*TODO: Add keyboard*/);
+                Message = stringBuilder.ToString(),
+                Keyboard = keyboardBuilder.Build()
+            };
         }
 
-        /// <summary>
-        /// Achievement message
-        /// </summary>
-        /// <param name="achievement"></param>
-        /// <returns></returns>
-        public string BuildAchievement(StoryAchievement achievement)
-        {
-            return $"Вы заработали достижение {achievement.Name}!\n - {achievement.Description}\n\n";
-        }
-
-        /// <summary>
-        /// Beginning message
-        /// </summary>
-        /// <returns></returns>
-        public string BuildBeginningMessage()
-        {
-            StringBuilder stringBuilder = new StringBuilder();
-
-            stringBuilder.AppendLine("Добро пожаловать!");
-            stringBuilder.AppendLine();
-            stringBuilder.AppendLine("Для большего удобства, пользуйтесь клиентом поддерживающим кнопки для ботов ВКонтакте (например официальным).");
-            stringBuilder.AppendLine("Возможно и управление при помощи сообщений.");
-            stringBuilder.AppendLine();
-            stringBuilder.AppendLine("Ваш прогресс будет сохраняться автоматически.");
-
-            return stringBuilder.ToString();
-        }
-
-        /// <summary>
-        /// Command list
-        /// </summary>
-        /// <returns></returns>
-        public string BuildCommandList()
-        {
-            StringBuilder stringBuilder = new StringBuilder("Список команд:\n\n");
-
-            stringBuilder.AppendLine(Prefix + "select - Диалог выбора истории (Сбросит прогресс текущего эпизода!)");
-            stringBuilder.AppendLine();
-            stringBuilder.AppendLine(Prefix + "repeat - Заново отправляет сообщений с диалогом выбора для текущей истории");
-            stringBuilder.AppendLine();
-            stringBuilder.AppendLine(Prefix + "list - Список всех историй и ваша статистика по ним");
-            stringBuilder.AppendLine(Prefix + "list <номер_истории> - Список всех эпизодов истории и ваша статистика по ним");
-            stringBuilder.AppendLine(Prefix + "list <номер_истории> <номер_эпизода (0 для пролога)> - Ваша статистика по эпизоду");
-
-            return stringBuilder.ToString();
-        }
-
-        /// <summary>
-        /// Short stats for all stories
-        /// </summary>
-        /// <param name="prologues"></param>
-        /// <param name="storiesStats"></param>
-        /// <returns></returns>
-        public string BuildStats(List<StoryDocument> prologues, List<SaveStoryStats> storiesStats)
+        public MessagesSendParams BuildStats(List<StoryDocument> prologues, List<SaveStoryStats> storiesStats)
         {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.Append("Общая статистика:\n\n");
@@ -251,16 +200,13 @@ namespace StoryBot.Vk.Logic
                 stringBuilder.Append($"{prologue.StoryId}. {prologue.Name} - Пройдено эпизодов: {completedEpisodes}\n");
             }
 
-            return stringBuilder.ToString();
+            return new MessagesSendParams
+            {
+                Message = stringBuilder.ToString()
+            };
         }
 
-        /// <summary>
-        /// Detailed stats for one story
-        /// </summary>
-        /// <param name="episodes"></param>
-        /// <param name="episodesStats"></param>
-        /// <returns></returns>
-        public string BuildStoryStats(List<StoryDocument> episodes, List<SaveEpisodeStats> episodesStats)
+        public MessagesSendParams BuildStoryStats(List<StoryDocument> episodes, List<SaveEpisodeStats> episodesStats)
         {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.Append($"Статистика по \"{episodes[0].Name}\":\n");
@@ -301,20 +247,20 @@ namespace StoryBot.Vk.Logic
                 logger.Warn("No data for stats");
             }
 
-            return stringBuilder.ToString();
+            return new MessagesSendParams
+            {
+                Message = stringBuilder.ToString()
+            };
         }
 
-        /// <summary>
-        /// Detailed stats for one episode
-        /// </summary>
-        /// <param name="episodeData"></param>
-        /// <param name="episodeStats"></param>
-        /// <returns></returns>
-        public string BuildEpisodeStats(StoryDocument episodeData, SaveEpisodeStats episodeStats)
+        public MessagesSendParams BuildEpisodeStats(StoryDocument episodeData, SaveEpisodeStats episodeStats)
         {
             if (episodeData.Episode == 0)
             {
-                return "Нельзя получить статистику по прологу";
+                return new MessagesSendParams
+                {
+                    Message = "Нельзя получить статистику по прологу"
+                };
             }
 
             StringBuilder stringBuilder = new StringBuilder();
@@ -350,7 +296,62 @@ namespace StoryBot.Vk.Logic
                 stringBuilder.Append("- Нет данных.");
             }
 
-            return stringBuilder.ToString();
+            return new MessagesSendParams
+            {
+                Message = stringBuilder.ToString()
+            };
         }
+
+        public MessagesSendParams BuildBeginningMessage()
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+
+            stringBuilder.AppendLine("Добро пожаловать!");
+            stringBuilder.AppendLine();
+            stringBuilder.AppendLine("Для большего удобства, пользуйтесь клиентом поддерживающим кнопки для ботов ВКонтакте (например официальным).");
+            stringBuilder.AppendLine("Возможно и управление при помощи сообщений.");
+            stringBuilder.AppendLine();
+            stringBuilder.AppendLine("Ваш прогресс будет сохраняться автоматически.");
+
+            return new MessagesSendParams
+            {
+                Message = stringBuilder.ToString()
+            };
+        }
+
+        public MessagesSendParams BuildIndexOutOfRangeMessage()
+        {
+            return new MessagesSendParams
+            {
+                Message = "Выберите вариант из представленных D:"
+            };
+        }
+
+        public MessagesSendParams BuildSomethingWentWrongMessage(string exception = null)
+        {
+            if (string.IsNullOrEmpty(exception)) exception = ":\n" + exception;
+            return new MessagesSendParams
+            {
+                Message = ":( Что-то пошло не так при обработке вашего запроса" + exception
+            };
+        }
+
+        public MessagesSendParams BuildCommandList()
+        {
+            StringBuilder stringBuilder = new StringBuilder("Список команд:\n\n");
+
+            stringBuilder.AppendLine(Prefix + "select - Диалог выбора истории (Сбросит прогресс текущего эпизода!)");
+            stringBuilder.AppendLine();
+            stringBuilder.AppendLine(Prefix + "repeat - Заново отправляет сообщений с диалогом выбора для текущей истории");
+            stringBuilder.AppendLine();
+            stringBuilder.AppendLine(Prefix + "list - Список всех историй и ваша статистика по ним");
+            stringBuilder.AppendLine(Prefix + "list <номер_истории> - Список всех эпизодов истории и ваша статистика по ним");
+            stringBuilder.AppendLine(Prefix + "list <номер_истории> <номер_эпизода (0 для пролога)> - Ваша статистика по эпизоду");
+
+            return new MessagesSendParams
+            {
+                Message = stringBuilder.ToString()
+            };
+        }  
     }
 }

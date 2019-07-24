@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -8,10 +7,10 @@ using MongoDB.Driver;
 using StoryBot.Core.Logic;
 using StoryBot.Core.Model;
 using StoryBot.Vk.Logic;
-using StoryBot.Vk.Vk.Logic;
 using System;
 using VkNet;
 using VkNet.Model;
+using VkNet.Model.RequestParams;
 
 namespace StoryBot.Vk
 {
@@ -31,14 +30,20 @@ namespace StoryBot.Vk
 
             services.AddSingleton(sp =>
             {
-                VkApi api = new VkApi();
-                api.Authorize(new ApiAuthParams { AccessToken = Environment.GetEnvironmentVariable("VK_ACCESSTOKEN") });
-
+                var vkApi = new VkApi();
+                vkApi.Authorize(new ApiAuthParams { AccessToken = Environment.GetEnvironmentVariable("VK_ACCESSTOKEN") });
+            
                 var database = new MongoClient(Environment.GetEnvironmentVariable("MONGODB_URI")).GetDatabase("StoryBot");
-                return new VkEventsHandler(new VkReplyHandler(
-                    api,
-                    new StoriesHandler(database.GetCollection<StoryDocument>("stories")),
-                    new SavesHandler(database.GetCollection<SaveDocument>("vkSaves"))));
+                var prefix = Environment.GetEnvironmentVariable("BOT_PREFIX")[0];
+
+                var replyHandler = new ReplyHandler<MessagesSendParams>(
+                    new StoriesContext(database.GetCollection<StoryDocument>("stories")),
+                    new SavesContext(database.GetCollection<SaveDocument>("vkSaves")),
+                    new VkMessageBuilder(prefix),
+                    new VkMessageSender(vkApi),
+                    prefix);
+
+                return new VkEventsHandler(vkApi, replyHandler);
             });
         }
 
@@ -49,14 +54,6 @@ namespace StoryBot.Vk
             {
                 app.UseDeveloperExceptionPage();
             }
-            else
-            {
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-                app.UseHsts();
-            }
-
-            // Disabled because I don't have SSL certificate 
-            // app.UseHttpsRedirection();
 
             app.UseMvc();
         }
