@@ -122,7 +122,6 @@ namespace StoryBot.Vk.Logic
                 switch (alias)
                 {
                     case "list":
-                        // Arguments length check...
                         switch (args.Length)
                         {
                             case 0: replyHandler.Commands.List(peerId); return;
@@ -143,22 +142,16 @@ namespace StoryBot.Vk.Logic
                                     return;
                                 }
                         }
-                        goto default;
+                        goto WrongCommandUsage;
                     case "repeat": replyHandler.Commands.Repeat(peerId); return;
                     case "select": replyHandler.Commands.Select(peerId); return;
-                    default:
-                        {
-                            // Send command list if command not found
-                            // TODO: Reply with command list
-                            //messageSender.Send(peerId, messageBuilder.BuildCommandList()); 
-                            return;
-                        }
+                    default: replyHandler.ReplyWithCommandList(peerId); return;
                 }
             }
-            catch (Exception)
-            {
-                replyHandler.ReplyWithError(peerId, "Неправильное использование команды.");
-            }
+            catch (Exception) { goto WrongCommandUsage; }
+
+        WrongCommandUsage:
+            replyHandler.ReplyWithError(peerId, "Неправильное использование команды.");
         }
 
         #endregion
