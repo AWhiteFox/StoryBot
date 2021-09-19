@@ -283,11 +283,11 @@ namespace StoryBot.Vk.Logic
                 }
 
                 stringBuilder.Append($"\nПолученные достижения ({episodeStats.ObtainedAchievements.Count}/{episodeData.Achievements.Length}):\n");
-                for (int i = 0; i < episodeData.Endings.Length; i++)
+                for (int i = 0; i < episodeData.Achievements.Length; i++)
                 {
                     if (episodeStats.ObtainedAchievements.Contains(i))
                     {
-                        stringBuilder.Append($"- \"{episodeData.Endings[i].Name}\"\n");
+                        stringBuilder.Append($"- \"{episodeData.Achievements[i].Name}\"\n");
                     }
                 }
             }
